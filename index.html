@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>eeygool's Flight Roster</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',sans-serif;background:#f0faf0;color:#2d4a2d;min-height:100vh;}
+header{background:linear-gradient(135deg,#c8efc8,#daf5da);border-bottom:1px solid #a8d8a8;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+.header-left h1{font-size:1.1rem;font-weight:700;color:#2e7d32;}
+.header-left p{font-size:.72rem;color:#5a8a5a;margin-top:2px;}
+.header-right{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+button{padding:6px 14px;border-radius:6px;border:none;cursor:pointer;font-size:.78rem;font-weight:600;transition:all .15s;}
+.btn-primary{background:#4caf50;color:#fff;}.btn-primary:hover{background:#388e3c;}
+.btn-secondary{background:#e8f5e9;color:#2e7d32;border:1px solid #a8d8a8;}.btn-secondary:hover{background:#c8efc8;}
+.btn-danger{background:#fce4ec;color:#c62828;border:1px solid #f48fb1;}
+.btn-ocr{background:#fff8e1;color:#e65100;border:1px solid #ffcc80;}.btn-ocr:hover{background:#ffe0b2;}
+.btn-save{background:#e3f2fd;color:#1565c0;border:1px solid #90caf9;}.btn-save:hover{background:#bbdefb;}
+.btn-save.dirty{background:#fff3e0;color:#e65100;border-color:#ffcc80;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(230,81,0,.3);}50%{box-shadow:0 0 0 6px rgba(230,81,0,0);}}
+.banner{display:none;padding:10px 20px;font-size:.82rem;align-items:center;gap:12px;flex-wrap:wrap;}
+.banner.active{display:flex;}
+.banner-saved{background:#e3f2fd;border-bottom:1px solid #90caf9;color:#1565c0;}
+.banner-unsaved{background:#fff8e1;border-bottom:2px solid #ffcc80;color:#e65100;}
+.nav{display:flex;align-items:center;justify-content:center;gap:16px;padding:14px;background:#e8f5e9;}
+.nav h2{font-size:1rem;font-weight:700;min-width:180px;text-align:center;color:#2e7d32;}
+.nav-btn{background:#fff;border:1px solid #a8d8a8;color:#2e7d32;width:32px;height:32px;border-radius:6px;font-size:1rem;display:flex;align-items:center;justify-content:center;cursor:pointer;}.nav-btn:hover{background:#c8efc8;}
+.legend{display:flex;gap:10px;padding:6px 16px;background:#f0faf0;flex-wrap:wrap;border-bottom:1px solid #c8efc8;}
+.legend-item{display:flex;align-items:center;gap:4px;font-size:.7rem;color:#5a8a5a;}
+.dot{width:10px;height:10px;border-radius:3px;}
+.dot-flight{background:#64b5f6;}.dot-pnc{background:#ce93d8;}.dot-leave{background:#ffb74d;}.dot-sick{background:#f48fb1;}.dot-layover{background:#f3e5f5;}.dot-medical{background:#4db6ac;}.dot-ground{background:#f8bbd0;}.dot-off{background:#c8e6c9;}
+.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:#a8d8a8;padding:1px;}
+.day-header{background:#daf5da;text-align:center;padding:8px 4px;font-size:.7rem;font-weight:700;color:#4a7a4a;text-transform:uppercase;letter-spacing:.5px;}
+.day-cell{background:#fff;min-height:90px;padding:4px;cursor:pointer;position:relative;transition:background .1s;}.day-cell:hover{background:#f0faf0;}.day-cell.empty{background:#f5fdf5;cursor:default;}
+.day-cell.today .day-num{background:#4caf50;color:#fff;border-radius:50%;}
+.day-num{font-size:.78rem;font-weight:600;color:#7aaa7a;margin-bottom:3px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;}
+.duty-chip{border-radius:4px;padding:2px 5px;font-size:.65rem;font-weight:600;margin-bottom:2px;line-height:1.3;overflow:hidden;display:block;}
+.duty-chip.flight{background:#bbdefb;color:#1565c0;}.duty-chip.flight.pnc{background:#e1bee7;color:#6a1b9a;}
+.duty-chip.leave{background:#fff9c4;color:#e65100;}.duty-chip.sick{background:#fce4ec;color:#c62828;}
+.duty-chip.layover{background:#f3e5f5;color:#6a1b9a;}.duty-chip.medical{background:#b2dfdb;color:#004d40;}
+.duty-chip.off{background:#e8f5e9;color:#4a7a4a;}.duty-chip.ground{background:#fce4ec;color:#880e4f;}
+.edit-btn-hover{display:none;position:absolute;top:4px;right:4px;background:#4caf50;color:#fff;border:none;border-radius:4px;width:20px;height:20px;font-size:.65rem;cursor:pointer;align-items:center;justify-content:center;}
+.day-cell:hover .edit-btn-hover{display:flex;}
+.detail-panel{background:#e8f5e9;border:1px solid #a8d8a8;margin:12px 16px;border-radius:10px;padding:16px;display:none;}
+.detail-panel.active{display:block;}
+.detail-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;}
+.detail-header h3{font-size:.95rem;font-weight:700;color:#2e7d32;}
+.detail-close{background:none;border:none;color:#7aaa7a;font-size:1.2rem;cursor:pointer;}
+.detail-entry{background:#fff;border-radius:8px;padding:12px;margin-bottom:8px;border-left:3px solid #4caf50;}
+.detail-entry.flight{border-left-color:#64b5f6;}.detail-entry.leave{border-left-color:#ffb74d;}.detail-entry.sick{border-left-color:#f48fb1;}.detail-entry.layover{border-left-color:#ce93d8;}.detail-entry.medical{border-left-color:#4db6ac;}.detail-entry.ground{border-left-color:#f48fb1;}
+.detail-row{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:4px;}
+.detail-field{min-width:100px;}.detail-field label{font-size:.65rem;color:#7aaa7a;text-transform:uppercase;display:block;}.detail-field span{font-size:.82rem;font-weight:600;color:#2d4a2d;}
+.detail-actions{display:flex;gap:8px;margin-top:8px;}
+.stats-bar{display:flex;gap:16px;padding:10px 16px;background:#daf5da;border-top:1px solid #a8d8a8;flex-wrap:wrap;}
+.stat{text-align:center;}.stat .val{font-size:1rem;font-weight:700;color:#2e7d32;}.stat .lbl{font-size:.65rem;color:#5a8a5a;text-transform:uppercase;}
+.qual-panel{margin:10px 16px 0;border-radius:10px;padding:14px 16px;border:1.5px solid #a8d8a8;background:#f0faf0;}
+.qual-panel h4{font-size:.82rem;font-weight:700;color:#2e7d32;margin-bottom:8px;}
+.qual-grid{display:flex;gap:10px;flex-wrap:wrap;}
+.qual-month-box{flex:1;min-width:140px;background:#fff;border-radius:8px;padding:10px 12px;border:1.5px solid #c8e6c9;display:flex;flex-direction:column;gap:4px;}
+.qual-month-box.warn{border-color:#ffb74d;background:#fffde7;}.qual-month-box.fail{border-color:#ef9a9a;background:#fce4ec;}
+.qm-title{font-size:.72rem;font-weight:700;color:#5a8a5a;}.qual-month-box.warn .qm-title{color:#e65100;}.qual-month-box.fail .qm-title{color:#c62828;}
+.qm-months{font-size:.78rem;font-weight:600;color:#2d4a2d;}
+.qm-result{margin-top:4px;padding:3px 7px;border-radius:4px;font-size:.7rem;font-weight:700;align-self:flex-start;}
+.qm-result.ok{background:#c8e6c9;color:#2e7d32;}.qm-result.warn{background:#fff9c4;color:#e65100;}.qm-result.fail{background:#fce4ec;color:#c62828;}
+.qual-target{font-size:.75rem;color:#2d4a2d;}.qual-target strong{color:#2e7d32;}.qual-target.fail strong{color:#c62828;}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,80,0,.25);z-index:100;align-items:center;justify-content:center;}.overlay.active{display:flex;}
+.modal{background:#f0faf0;border:1px solid #a8d8a8;border-radius:12px;padding:24px;width:440px;max-width:95vw;max-height:90vh;overflow-y:auto;}
+.modal h3{font-size:1rem;font-weight:700;margin-bottom:16px;color:#2e7d32;}
+.form-group{margin-bottom:12px;}.form-group label{display:block;font-size:.75rem;color:#5a8a5a;margin-bottom:4px;}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:8px 10px;border-radius:6px;border:1px solid #a8d8a8;background:#fff;color:#2d4a2d;font-size:.82rem;outline:none;}
+.form-group input:focus,.form-group select:focus{border-color:#4caf50;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;}
+
+/* OCR */
+#ocrPreview{width:100%;max-height:160px;object-fit:contain;border-radius:8px;border:1px solid #a8d8a8;margin-bottom:8px;display:none;}
+.ocr-status{text-align:center;padding:8px;font-size:.78rem;color:#5a8a5a;background:#e8f5e9;border-radius:8px;margin-bottom:8px;}
+.step-badge{display:inline-block;background:#4caf50;color:#fff;border-radius:50%;width:20px;height:20px;text-align:center;line-height:20px;font-size:.72rem;font-weight:700;margin-right:6px;}
+.ocr-tip{background:#e8f5e9;border-radius:8px;padding:10px 12px;font-size:.72rem;color:#5a8a5a;margin-bottom:10px;line-height:1.6;}
+.ocr-tip code{background:#c8efc8;padding:1px 5px;border-radius:3px;font-family:monospace;color:#2e7d32;}
+.ocr-result-table{width:100%;border-collapse:collapse;font-size:.75rem;margin-bottom:8px;}
+.ocr-result-table th{background:#c8efc8;padding:5px 8px;text-align:left;font-size:.7rem;color:#2e7d32;border-bottom:1px solid #a8d8a8;}
+.ocr-result-table td{padding:4px 6px;border-bottom:1px solid #e8f5e9;}
+.ocr-result-table input[type=text],.ocr-result-table select{width:100%;padding:2px 4px;border:1px solid #a8d8a8;border-radius:4px;background:#fff;font-size:.72rem;}
+.ocr-row-del{background:none;border:none;color:#e57373;cursor:pointer;font-size:.9rem;}
+.drop-zone{border:2px dashed #a8d8a8;border-radius:10px;padding:14px;text-align:center;color:#7aaa7a;font-size:.78rem;cursor:pointer;background:#f5fdf5;margin-bottom:8px;transition:background .15s;}
+.drop-zone:hover,.drop-zone.dragover{background:#e8f5e9;border-color:#4caf50;}
+@media(max-width:600px){.day-cell{min-height:60px;}.duty-chip{font-size:.58rem;padding:1px 3px;}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <h1>✈ eeygool's 🩷 Flight Roster</h1>
+    <p>Position: AP &nbsp;|&nbsp; Home Base: BKK &nbsp;|&nbsp; Group: 2017K</p>
+  </div>
+  <div class="header-right">
+    <button class="btn-primary" onclick="openAddModal()">+ Add Entry</button>
+    <button class="btn-ocr" onclick="openOcrModal()">📷 Import Roster</button>
+    <button class="btn-save" id="btnSave" onclick="saveBackup()">💾 Save Data</button>
+    <label class="btn-save" style="cursor:pointer;display:inline-block;padding:6px 14px;">📂 Load Backup<input type="file" accept=".json" onchange="loadBackup(event)" style="display:none"></label>
+    <button class="btn-secondary" onclick="exportCSV()">⬇ CSV</button>
+  </div>
+</header>
+
+<div class="banner banner-unsaved" id="bannerUnsaved">
+  ⚠️ <strong>Unsaved changes!</strong> Click 💾 Save Data to download a backup.
+  <button class="btn-primary" style="font-size:.72rem;padding:4px 12px;" onclick="saveBackup()">💾 Save Now</button>
+</div>
+<div class="banner banner-saved" id="bannerSaved">
+  ✅ <strong>Backup downloaded!</strong> Upload it to GitHub to keep it permanent.
+  <button class="btn-secondary" style="font-size:.7rem;padding:3px 10px" onclick="document.getElementById('bannerSaved').classList.remove('active')">✕</button>
+</div>
+
+<div class="nav">
+  <button class="nav-btn" onclick="changeMonth(-1)">‹</button>
+  <h2 id="monthTitle"></h2>
+  <button class="nav-btn" onclick="changeMonth(1)">›</button>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="dot dot-flight"></div> Flight</div>
+  <div class="legend-item"><div class="dot dot-pnc"></div> PNC</div>
+  <div class="legend-item"><div class="dot dot-leave"></div> AL</div>
+  <div class="legend-item"><div class="dot dot-sick"></div> SL ⚠</div>
+  <div class="legend-item"><div class="dot dot-layover"></div> Layover</div>
+  <div class="legend-item"><div class="dot dot-medical"></div> Medical</div>
+  <div class="legend-item"><div class="dot dot-ground"></div> Ground</div>
+  <div class="legend-item"><div class="dot dot-off"></div> Day Off</div>
+  <div class="legend-item" style="color:#c62828;font-size:.7rem;">⚡ Max 2 duties/day</div>
+</div>
+
+<div class="calendar-grid" id="calGrid"></div>
+
+<div class="detail-panel" id="detailPanel">
+  <div class="detail-header">
+    <h3 id="detailDate"></h3>
+    <button class="detail-close" onclick="closeDetail()">✕</button>
+  </div>
+  <div id="detailContent"></div>
+</div>
+
+<div class="stats-bar" id="statsBar"></div>
+<div class="qual-panel" id="qualPanel"></div>
+
+<!-- Import Roster Modal (OCR + Manual) -->
+<div class="overlay" id="ocrOverlay">
+  <div class="modal" style="width:560px;">
+    <h3>📋 Import Roster</h3>
+
+    <!-- Settings row -->
+    <div class="form-row" style="margin-bottom:10px;">
+      <div class="form-group"><label>Month</label>
+        <select id="ocrMonth">
+          <option value="1">January</option><option value="2">February</option><option value="3">March</option>
+          <option value="4">April</option><option value="5">May</option><option value="6">June</option>
+          <option value="7">July</option><option value="8">August</option><option value="9">September</option>
+          <option value="10">October</option><option value="11">November</option><option value="12">December</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Year</label><input type="number" id="ocrYear" value="2026" min="2020" max="2035"></div>
+    </div>
+
+    <!-- STEP 1: Type duties manually OR scan image -->
+    <p style="font-size:.82rem;font-weight:700;color:#2e7d32;margin-bottom:8px;"><span class="step-badge">1</span>Type duties below — one line per day</p>
+
+    <div class="ocr-tip">
+      Format: <code>day  duty  [duty2]</code><br>
+      <code>1 68</code> &nbsp; <code>3 212 PNC</code> &nbsp; <code>13 164 163</code> &nbsp; <code>7 67</code> &nbsp; <code>8 LO</code><br>
+      <code>6 AL</code> &nbsp; <code>11 DO</code> &nbsp; <code>15 SBQ</code> &nbsp; <code>26 277 278</code><br>
+      PNC goes after the flight number: <code>19 67 PNC</code>
+    </div>
+
+    <textarea id="ocrRawText" rows="10" style="width:100%;padding:8px;border:1px solid #a8d8a8;border-radius:6px;font-family:monospace;font-size:.82rem;color:#2d4a2d;background:#fff;resize:vertical;" placeholder="1 68&#10;2 DO&#10;3 DO&#10;6 AL&#10;7 67&#10;8 LO&#10;9 68&#10;10 68&#10;..."></textarea>
+
+    <div style="display:flex;gap:8px;align-items:center;margin:8px 0;flex-wrap:wrap;">
+      <button class="btn-primary" onclick="parseRawText()" style="flex:1;">▶ Preview Duties</button>
+      <span style="font-size:.72rem;color:#7aaa7a;">— or scan image —</span>
+      <div class="drop-zone" style="flex:1;padding:8px;margin:0;" id="dropZone" onclick="document.getElementById('ocrFileInput').click()">
+        📷 Upload roster photo<br><span style="font-size:.65rem;color:#a8d8a8;">PNG/JPG — auto-fills text above</span>
+        <input type="file" id="ocrFileInput" accept="image/*" style="display:none" onchange="handleOcrFile(event)">
+      </div>
+    </div>
+
+    <img id="ocrPreview" alt="preview">
+    <div class="ocr-status" id="ocrStatus" style="display:none"></div>
+
+    <!-- STEP 2: Review table -->
+    <div id="ocrResultArea" style="display:none;margin-top:8px;">
+      <p style="font-size:.75rem;font-weight:700;color:#2e7d32;margin-bottom:6px;"><span class="step-badge">2</span>Review — edit or delete rows, then save:</p>
+      <div style="max-height:200px;overflow-y:auto;">
+        <table class="ocr-result-table">
+          <thead><tr><th>Date</th><th>Code</th><th>Type</th><th>PNC?</th><th></th></tr></thead>
+          <tbody id="ocrTableBody"></tbody>
+        </table>
+      </div>
+      <button class="btn-secondary" style="font-size:.72rem;margin-top:6px;" onclick="addOcrRow()">+ Add row</button>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeOcrModal()">Cancel</button>
+      <button class="btn-primary" id="ocrSaveBtn" style="display:none" onclick="commitOcrImport()">💾 Save to Calendar</button>
+    </div>
+  </div>
+</div>
+
+<!-- EVA Summary Modal -->
+<div class="overlay" id="summaryOverlay">
+  <div class="modal">
+    <h3>✈ EVA System Summary</h3>
+    <div class="form-row">
+      <div class="form-group"><label>Block Hours</label><input type="text" id="sBlockHours" placeholder="83:20"></div>
+      <div class="form-group"><label>Perdiem Hours</label><input type="text" id="sPerdiem" placeholder="341:20"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Days Off</label><input type="number" id="sDaysOff" min="0"></div>
+      <div class="form-group"><label>Swap</label><input type="number" id="sSwap" min="0"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>YDO Used</label><input type="number" id="sYdoUsed" min="0"></div>
+      <div class="form-group"><label>YDO Total</label><input type="number" id="sYdoTotal" min="0"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeSummaryModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveSummaryModal()">💾 Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Entry Modal -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h3 id="modalTitle">Add Roster Entry</h3>
+    <input type="hidden" id="editId">
+    <div class="form-group"><label>Date</label><input type="date" id="fDate"></div>
+    <div class="form-group" id="dutyLimitWarning" style="display:none;background:#fce4ec;border-radius:8px;padding:8px 12px;color:#c62828;font-size:.78rem;font-weight:700;">
+      ⚡ This day already has 2 duties. Max 2 per day allowed.
+    </div>
+    <div class="form-group">
+      <label>Duty Type</label>
+      <select id="fType" onchange="toggleFlightFields()">
+        <option value="flight">Flight</option>
+        <option value="leave">Annual Leave (AL) ⚠</option>
+        <option value="sick">Sick Leave (SL) ⚠</option>
+        <option value="layover">Layover</option>
+        <option value="medical">Medical Check</option>
+        <option value="ground">Ground Duty / Training</option>
+        <option value="off">Day Off</option>
+      </select>
+    </div>
+    <div id="flightFields">
+      <div class="form-group"><label>Flight Number</label><input type="text" id="fFlight" placeholder="e.g. BR164"></div>
+      <div class="form-row">
+        <div class="form-group"><label>From</label><input type="text" id="fFrom" placeholder="BKK"></div>
+        <div class="form-group"><label>To</label><input type="text" id="fTo" placeholder="TPE"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>STD</label><input type="time" id="fSTD"></div>
+        <div class="form-group"><label>STA</label><input type="time" id="fSTA"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>ATD</label><input type="time" id="fATD"></div>
+        <div class="form-group"><label>ATA</label><input type="time" id="fATA"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Block Hours</label><input type="text" id="fBlock" placeholder="2:45"></div>
+        <div class="form-group"><label>Fly Time</label><input type="text" id="fFlyTime" placeholder="2:30"></div>
+      </div>
+    </div>
+    <div class="form-group" id="postScheduleGroup" style="display:none;background:#fce4ec;border-radius:8px;padding:10px;border:1.5px solid #f48fb1;">
+      <label style="color:#c62828;font-weight:700;font-size:.78rem;">⚠ Changed after schedule launch?</label>
+      <label style="display:flex;align-items:center;gap:8px;margin-top:6px;cursor:pointer;font-size:.82rem;">
+        <input type="checkbox" id="fPostSchedule" style="width:16px;height:16px;accent-color:#e53935;">
+        Yes — changed from a scheduled flight after roster was published
+      </label>
+    </div>
+    <div class="form-group"><label>Notes</label><textarea id="fNotes" rows="2" placeholder="Optional notes..."></textarea></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" id="btnSaveEntry" onclick="saveEntry()">💾 Save Entry</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/tesseract.js@4/dist/tesseract.min.js"></script>
+<script>
+const STORAGE_KEY='rosterData_v2',SUMMARY_KEY='rosterSummary_v1';
+const MAX_DUTIES_PER_DAY=2;
+
+function loadData(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY))||[];}catch{return[];}}
+function saveData(d){localStorage.setItem(STORAGE_KEY,JSON.stringify(d));markDirty();}
+function loadSummaries(){try{return JSON.parse(localStorage.getItem(SUMMARY_KEY))||{};}catch{return{};}}
+function saveSummaries(s){localStorage.setItem(SUMMARY_KEY,JSON.stringify(s));}
+function summaryKey(){return`${viewYear}-${String(viewMonth+1).padStart(2,'0')}`;}
+
+// ── Dirty state ───────────────────────────────────────────────────────────────
+let isDirty=false;
+function markDirty(){isDirty=true;document.getElementById('bannerUnsaved').classList.add('active');document.getElementById('bannerSaved').classList.remove('active');document.getElementById('btnSave').classList.add('dirty');document.getElementById('btnSave').textContent='💾 Save Data ⚠';}
+function markClean(){isDirty=false;document.getElementById('bannerUnsaved').classList.remove('active');document.getElementById('btnSave').classList.remove('dirty');document.getElementById('btnSave').textContent='💾 Save Data';}
+window.addEventListener('beforeunload',e=>{if(isDirty){e.preventDefault();e.returnValue='You have unsaved changes!';}});
+
+// ── Max duties per day check ──────────────────────────────────────────────────
+function dutiesOnDate(date,excludeId=null){return loadData().filter(e=>e.date===date&&e.id!==excludeId).length;}
+function canAddDuty(date,excludeId=null){return dutiesOnDate(date,excludeId)<MAX_DUTIES_PER_DAY;}
+
+// ── Backup ────────────────────────────────────────────────────────────────────
+function saveBackup(){
+  const b={version:2,exportedAt:new Date().toISOString(),rosterData:loadData(),summaries:loadSummaries()};
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(b,null,2)],{type:'application/json'}));
+  a.download=`eeygool_roster_${new Date().toISOString().slice(0,10)}.json`;a.click();
+  markClean();document.getElementById('bannerSaved').classList.add('active');setTimeout(()=>document.getElementById('bannerSaved').classList.remove('active'),6000);
+}
+function loadBackup(ev){
+  const f=ev.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      const b=JSON.parse(e.target.result);if(!b.rosterData){alert('❌ Invalid backup file.');return;}
+      if(!confirm(`Load backup from ${(b.exportedAt||'').slice(0,10)}?\nThis REPLACES all current data.`))return;
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(b.rosterData));
+      if(b.summaries)localStorage.setItem(SUMMARY_KEY,JSON.stringify(b.summaries));
+      markClean();render();alert('✅ Backup loaded!');
+    }catch{alert('❌ Could not read file.');}
+    ev.target.value='';
+  };
+  r.readAsText(f);
+}
+function exportCSV(){
+  const h=['date','type','flight','from','to','std','sta','atd','ata','block','flyTime','notes','postSchedule'];
+  const rows=loadData().map(e=>h.map(k=>`"${String(e[k]||'').replace(/"/g,'""')}"`).join(','));
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([[h.join(','),...rows].join('\n')],{type:'text/csv'}));
+  a.download=`roster_${viewYear}_${viewMonth+1}.csv`;a.click();
+}
+
+// ── Seed ──────────────────────────────────────────────────────────────────────
+function seedData(){
+  if(loadData().length)return;
+  const S=false;
+  const seed=[
+    {id:'m1',date:'2026-05-01',type:'off',flight:'',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'DO',postSchedule:S},
+    {id:'m2',date:'2026-05-02',type:'off',flight:'',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'DO',postSchedule:S},
+    {id:'m3',date:'2026-05-03',type:'flight',flight:'BR212',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'PNC',postSchedule:S},
+    {id:'m4',date:'2026-05-04',type:'flight',flight:'BR6',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'',postSchedule:S},
+    {id:'m5',date:'2026-05-05',type:'flight',flight:'BR15',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'',postSchedule:S},
+    {id:'m6',date:'2026-05-06',type:'flight',flight:'BR15',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'',postSchedule:S},
+    {id:'m7',date:'2026-05-07',type:'flight',flight:'BR15',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'',postSchedule:S},
+    {id:'m8',date:'2026-05-07',type:'flight',flight:'BR211',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'PNC',postSchedule:S},
+    {id:'m9',date:'2026-05-08',type:'off',flight:'',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'DO',postSchedule:S},
+    {id:'m10',date:'2026-05-09',type:'off',flight:'',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'DO',postSchedule:S},
+    {id:'m11',date:'2026-05-10',type:'off',flight:'',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'DO',postSchedule:S},
+    {id:'m12',date:'2026-05-11',type:'flight',flight:'BR202',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'',postSchedule:S},
+    {id:'m13',date:'2026-05-12',type:'medical',flight:'',from:'BKK',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'MC',postSchedule:S},
+    {id:'m14',date:'2026-05-13',type:'flight',flight:'BR164',from:'BKK',to:'TPE',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'',postSchedule:S},
+    {id:'m15',date:'2026-05-13',type:'flight',flight:'BR163',from:'TPE',to:'BKK',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'',postSchedule:S},
+    {id:'m16',date:'2026-05-14',type:'layover',flight:'',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'L/O',postSchedule:S},
+    {id:'m17',date:'2026-05-15',type:'flight',flight:'BR211',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'PNC',postSchedule:S},
+    {id:'m18',date:'2026-05-16',type:'off',flight:'',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'DOX',postSchedule:S},
+    {id:'m19',date:'2026-05-17',type:'off',flight:'',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'DOX',postSchedule:S},
+    {id:'m20',date:'2026-05-18',type:'off',flight:'',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'DO',postSchedule:S},
+    {id:'m21',date:'2026-05-19',type:'off',flight:'',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'DO',postSchedule:S},
+    {id:'m22',date:'2026-05-20',type:'off',flight:'',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'DO',postSchedule:S},
+    {id:'m23',date:'2026-05-21',type:'flight',flight:'BR68',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'PNC',postSchedule:S},
+    {id:'m24',date:'2026-05-22',type:'flight',flight:'BR12',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'',postSchedule:S},
+    {id:'m25',date:'2026-05-23',type:'flight',flight:'BR11',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'',postSchedule:S},
+    {id:'m26',date:'2026-05-24',type:'flight',flight:'BR11',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'',postSchedule:S},
+    {id:'m27',date:'2026-05-25',type:'flight',flight:'BR11',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'',postSchedule:S},
+    {id:'m28',date:'2026-05-25',type:'flight',flight:'BR211',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'PNC',postSchedule:S},
+    {id:'m29',date:'2026-05-26',type:'leave',flight:'',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'AL',postSchedule:S},
+    {id:'m30',date:'2026-05-27',type:'leave',flight:'',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'AL',postSchedule:S},
+    {id:'m31',date:'2026-05-28',type:'leave',flight:'',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'AL',postSchedule:S},
+    {id:'m32',date:'2026-05-29',type:'flight',flight:'BR67',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'',postSchedule:S},
+    {id:'m33',date:'2026-05-30',type:'layover',flight:'',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'LO',postSchedule:S},
+    {id:'m34',date:'2026-05-31',type:'flight',flight:'BR68',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'',postSchedule:S},
+    {id:'j1',date:'2026-06-01',type:'flight',flight:'BR68',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'',postSchedule:S},
+    {id:'j2',date:'2026-06-02',type:'off',flight:'',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'DO',postSchedule:S},
+    {id:'j3',date:'2026-06-03',type:'off',flight:'',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'DO',postSchedule:S},
+    {id:'j4',date:'2026-06-04',type:'off',flight:'',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'DO',postSchedule:S},
+    {id:'j5',date:'2026-06-05',type:'off',flight:'',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'DO',postSchedule:S},
+    {id:'j6',date:'2026-06-06',type:'leave',flight:'',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'AL',postSchedule:S},
+    {id:'j7',date:'2026-06-07',type:'flight',flight:'BR67',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'',postSchedule:S},
+    {id:'j8',date:'2026-06-08',type:'layover',flight:'',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'LO',postSchedule:S},
+    {id:'j9',date:'2026-06-09',type:'flight',flight:'BR68',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'',postSchedule:S},
+    {id:'j10',date:'2026-06-10',type:'flight',flight:'BR68',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'',postSchedule:S},
+    {id:'j11',date:'2026-06-11',type:'off',flight:'',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'DO',postSchedule:S},
+    {id:'j12',date:'2026-06-12',type:'off',flight:'',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'DO',postSchedule:S},
+    {id:'j13',date:'2026-06-13',type:'leave',flight:'',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'AL',postSchedule:S},
+    {id:'j14',date:'2026-06-14',type:'off',flight:'',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'DO',postSchedule:S},
+    {id:'j15',date:'2026-06-15',type:'ground',flight:'',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'SBQ CA LHS',postSchedule:S},
+    {id:'j16',date:'2026-06-16',type:'flight',flight:'BR212',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'',postSchedule:S},
+    {id:'j17',date:'2026-06-17',type:'flight',flight:'BR255',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'',postSchedule:S},
+    {id:'j18',date:'2026-06-18',type:'flight',flight:'BR256',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'',postSchedule:S},
+    {id:'j19',date:'2026-06-19',type:'flight',flight:'BR67',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'PNC',postSchedule:S},
+    {id:'j20',date:'2026-06-20',type:'off',flight:'',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'DO',postSchedule:S},
+    {id:'j21',date:'2026-06-21',type:'off',flight:'',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'DO',postSchedule:S},
+    {id:'j22',date:'2026-06-22',type:'ground',flight:'',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'J11 CA LCS',postSchedule:S},
+    {id:'j23',date:'2026-06-23',type:'flight',flight:'BR212',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'PNC',postSchedule:S},
+    {id:'j24',date:'2026-06-24',type:'flight',flight:'BR237',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'',postSchedule:S},
+    {id:'j25',date:'2026-06-25',type:'flight',flight:'BR238',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'',postSchedule:S},
+    {id:'j26',date:'2026-06-26',type:'flight',flight:'BR277',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'',postSchedule:S},
+    {id:'j27',date:'2026-06-26',type:'flight',flight:'BR278',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'',postSchedule:S},
+    {id:'j28',date:'2026-06-27',type:'flight',flight:'BR201',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'PNC',postSchedule:S},
+    {id:'j29',date:'2026-06-28',type:'off',flight:'',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'DO',postSchedule:S},
+    {id:'j30',date:'2026-06-29',type:'off',flight:'',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'DO',postSchedule:S},
+    {id:'j31',date:'2026-06-30',type:'flight',flight:'BR75',from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',notes:'',postSchedule:S},
+  ];
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(seed));
+  const sum=loadSummaries();
+  if(!sum['2026-05'])sum['2026-05']={blockHours:'83:20',perdiem:'341:20',daysOff:'10',ydoUsed:'52',ydoTotal:'124',swap:'2'};
+  if(!sum['2026-06'])sum['2026-06']={blockHours:'83:26',perdiem:'275:35',daysOff:'11',ydoUsed:'63',ydoTotal:'124',swap:'2'};
+  saveSummaries(sum);
+}
+
+let viewYear=2026,viewMonth=4,selectedDay=null,editingId=null;
+const MONTHS_FULL=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MONTHS_SHORT=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DUTY_MAP={DO:'off',DOX:'off',AL:'leave',SL:'sick',MC:'medical',LO:'layover','L/O':'layover',SBQ:'ground',GND:'ground'};
+
+function render(){renderGrid();renderStats();renderQualPanel();if(selectedDay!==null)showDetail(selectedDay);}
+
+function renderGrid(){
+  document.getElementById('monthTitle').textContent=`${MONTHS_FULL[viewMonth]} ${viewYear}`;
+  let html=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<div class="day-header">${d}</div>`).join('');
+  const first=new Date(viewYear,viewMonth,1).getDay(),dim=new Date(viewYear,viewMonth+1,0).getDate(),today=new Date(),data=loadData();
+  for(let i=0;i<first;i++)html+=`<div class="day-cell empty"></div>`;
+  for(let d=1;d<=dim;d++){
+    const ds=`${viewYear}-${String(viewMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const entries=data.filter(e=>e.date===ds);
+    const isToday=today.getFullYear()===viewYear&&today.getMonth()===viewMonth&&today.getDate()===d;
+    let chips='';
+    if(entries.length){
+      chips=entries.map(e=>{
+        const fn=(e.flight||'FLT').replace(/^BR/i,''),isPNC=(e.notes||'').toUpperCase().includes('PNC');
+        const isLO=(e.notes||'').toUpperCase()==='LO',isDOX=(e.notes||'').toUpperCase()==='DOX';
+        const rp=e.from&&e.to?`<br>${e.from}→${e.to}`:e.from?`<br>${e.from}`:'';
+        const tp=(e.atd||e.std)?`<br>${e.atd||e.std}${(e.ata||e.sta)?' – '+(e.ata||e.sta):''}`:'' ;
+        const label=e.type==='flight'?`${fn}${isPNC?' PNC':''}${rp}${tp}`:
+                    e.type==='leave'?(e.postSchedule?'AL ⚠':'AL'):
+                    e.type==='sick'?(e.postSchedule?'SL ⚠':'SL'):
+                    e.type==='layover'?(isLO?'LO':'L/O'):
+                    e.type==='medical'?'MC':
+                    e.type==='ground'?(e.notes||'GND'):
+                    isDOX?'DOX':'DO';
+        return `<div class="duty-chip ${e.type}${e.type==='flight'&&isPNC?' pnc':''}">${label}</div>`;
+      }).join('');
+    }
+    // Show limit indicator if 2 duties already
+    const limitBadge=entries.length>=MAX_DUTIES_PER_DAY?`<div style="position:absolute;bottom:3px;right:3px;font-size:.6rem;color:#c62828;font-weight:700;">max</div>`:'';
+    html+=`<div class="day-cell${isToday?' today':''}" onclick="dayClick(${d},event)">
+      <div class="day-num">${d}</div>${chips}${limitBadge}
+      <button class="edit-btn-hover" onclick="openAddModal('${ds}',event)">✎</button>
+    </div>`;
+  }
+  document.getElementById('calGrid').innerHTML=html;
+}
+
+function renderStats(){
+  const data=loadData().filter(e=>{const[y,m]=e.date.split('-').map(Number);return y===viewYear&&m===viewMonth+1;});
+  const flights=data.filter(e=>e.type==='flight'),leaveDays=data.filter(e=>e.type==='leave').length,sickDays=data.filter(e=>e.type==='sick').length;
+  const alslC=data.filter(e=>(e.type==='leave'||e.type==='sick')&&e.postSchedule).length;
+  const s=loadSummaries()[summaryKey()]||{},hasEva=!!s.blockHours;
+  const bh=s.blockHours||'—',pd=s.perdiem||'—',dof=s.daysOff!==undefined?s.daysOff:'—';
+  const yu=s.ydoUsed!==undefined?s.ydoUsed:'—',yt=s.ydoTotal!==undefined?s.ydoTotal:'—',sw=s.swap!==undefined?s.swap:'—';
+  document.getElementById('statsBar').innerHTML=`
+    <div class="stat"><div class="val">${flights.length}</div><div class="lbl">Flights</div></div>
+    <div class="stat"><div class="val" style="${hasEva?'':'color:#aaa'}">${bh}</div><div class="lbl">Block Hrs${hasEva?' ✓':''}</div></div>
+    <div class="stat"><div class="val" style="${hasEva?'':'color:#aaa'}">${pd}</div><div class="lbl">Perdiem</div></div>
+    <div class="stat"><div class="val">${dof}</div><div class="lbl">Days Off</div></div>
+    <div class="stat"><div class="val">${yu}/${yt}</div><div class="lbl">YDO</div></div>
+    <div class="stat"><div class="val">${sw}</div><div class="lbl">Swap</div></div>
+    <div class="stat"><div class="val">${leaveDays}</div><div class="lbl">AL</div></div>
+    <div class="stat"><div class="val">${sickDays}</div><div class="lbl">SL</div></div>
+    <div class="stat"><div class="val" style="color:${alslC>3?'#c62828':alslC===3?'#e65100':'#2e7d32'}">${alslC}/3</div><div class="lbl">Changed</div></div>
+    <div class="stat"><button class="btn-secondary" style="font-size:.68rem;padding:4px 8px" onclick="openSummaryModal()">✎ EVA Summary</button></div>`;
+}
+
+function addMonths(y,m0,d){let nm=m0+d;return{y:y+Math.floor(nm/12),m:((nm%12)+12)%12};}
+function alslForMonth(y,m1){return loadData().filter(e=>{const[ey,em]=e.date.split('-').map(Number);return ey===y&&em===m1&&(e.type==='leave'||e.type==='sick')&&e.postSchedule;}).length;}
+function hasFlight(y,m1){return loadData().some(e=>{const[ey,em]=e.date.split('-').map(Number);return ey===y&&em===m1&&e.type==='flight';});}
+
+function renderQualPanel(){
+  let html=`<h4>📋 FLT / DO Request Eligibility</h4>
+  <p style="font-size:.72rem;color:#5a8a5a;margin-bottom:10px;">Only AL/SL <b>changed from scheduled flight after roster launch</b> counts toward the 3-day limit.</p>
+  <div class="qual-grid">`;
+  for(let o=-1;o<=1;o++){
+    const en=addMonths(viewYear,viewMonth,o),mi=addMonths(viewYear,viewMonth,o-1),st=addMonths(viewYear,viewMonth,o-2);
+    const dot=addMonths(en.y,en.m,2),flt=addMonths(en.y,en.m,3);
+    const c1=alslForMonth(st.y,st.m+1),c2=alslForMonth(mi.y,mi.m+1),c3=alslForMonth(en.y,en.m+1),tot=c1+c2+c3;
+    const hd=hasFlight(st.y,st.m+1)&&hasFlight(mi.y,mi.m+1)&&hasFlight(en.y,en.m+1);
+    const q=tot<=3&&hd,bc=!hd||tot>3?'fail':tot===3?'warn':'',br=!hd?'fail':tot>3?'fail':tot===3?'warn':'ok';
+    const bt=!hd?'✗ Missing duties':tot>3?`✗ Exceeded (${tot}/3)`:tot===3?`⚠ At limit (${tot}/3)`:`✓ Eligible (${tot}/3)`;
+    html+=`<div class="qual-month-box ${bc}">
+      <div class="qm-title">Qualifying period</div>
+      <div class="qm-months">${MONTHS_SHORT[st.m]} ${st.y} – ${MONTHS_SHORT[en.m]} ${en.y}</div>
+      <div style="font-size:.72rem;color:#5a8a5a;">AL+SL: <b>${c1}</b>+<b>${c2}</b>+<b>${c3}</b>=<b>${tot}</b>/3</div>
+      <div class="qm-result ${br}">${bt}</div>
+      ${q?`<div class="qual-target"><strong>DO → ${MONTHS_FULL[dot.m]} ${dot.y}</strong></div><div class="qual-target"><strong>FLT → ${MONTHS_FULL[flt.m]} ${flt.y}</strong></div>`
+        :`<div class="qual-target fail"><strong>Cannot request for ${MONTHS_FULL[dot.m]} ${dot.y}</strong></div>`}
+    </div>`;
+  }
+  html+=`</div><p style="font-size:.68rem;color:#7aaa7a;margin-top:10px;">* PNC excluded · Original roster AL/SL = 0</p>`;
+  document.getElementById('qualPanel').innerHTML=html;
+}
+
+function dayClick(d,e){if(e.target.classList.contains('duty-chip')||e.target.classList.contains('edit-btn-hover'))return;selectedDay=d;showDetail(d);}
+function showDetail(d){
+  const ds=`${viewYear}-${String(viewMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  const data=loadData().filter(e=>e.date===ds);
+  document.getElementById('detailDate').textContent=new Date(viewYear,viewMonth,d).toLocaleDateString('en-GB',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const count=data.length;
+  const limitNote=count>=MAX_DUTIES_PER_DAY?`<div style="background:#fce4ec;border-radius:6px;padding:6px 10px;font-size:.72rem;color:#c62828;font-weight:700;margin-bottom:8px;">⚡ Max ${MAX_DUTIES_PER_DAY} duties reached for this day.</div>`:'';
+  if(!data.length){
+    document.getElementById('detailContent').innerHTML=`<p style="color:#5a8a5a;font-size:.82rem;">No duties. <a href="#" onclick="openAddModal('${ds}',event)" style="color:#2e7d32">+ Add entry</a></p>`;
+  }else{
+    document.getElementById('detailContent').innerHTML=limitNote+data.map(e=>`
+      <div class="detail-entry ${e.type}">
+        <div class="detail-row">
+          <div class="detail-field"><label>Type</label><span>${e.type.charAt(0).toUpperCase()+e.type.slice(1)}${e.postSchedule?' ⚠':''}</span></div>
+          ${e.flight?`<div class="detail-field"><label>Flight</label><span>${e.flight}${(e.notes||'').includes('PNC')?' (PNC)':''}</span></div>`:''}
+          ${e.from?`<div class="detail-field"><label>Route</label><span>${e.from}→${e.to||'—'}</span></div>`:''}
+        </div>
+        ${e.std||e.sta?`<div class="detail-row"><div class="detail-field"><label>STD</label><span>${e.std||'—'}</span></div><div class="detail-field"><label>STA</label><span>${e.sta||'—'}</span></div><div class="detail-field"><label>ATD</label><span>${e.atd||'—'}</span></div><div class="detail-field"><label>ATA</label><span>${e.ata||'—'}</span></div></div>`:''}
+        ${e.block||e.flyTime?`<div class="detail-row"><div class="detail-field"><label>Block</label><span>${e.block||'—'}</span></div><div class="detail-field"><label>Fly Time</label><span>${e.flyTime||'—'}</span></div></div>`:''}
+        ${e.notes?`<div style="font-size:.78rem;color:#5a8a5a;margin-top:4px;">${e.notes}</div>`:''}
+        <div class="detail-actions">
+          <button class="btn-secondary" style="font-size:.72rem;padding:4px 10px" onclick="openEditModal('${e.id}')">✎ Edit</button>
+          <button class="btn-danger" style="font-size:.72rem;padding:4px 10px" onclick="deleteEntry('${e.id}')">✕ Delete</button>
+        </div>
+      </div>`).join('');
+  }
+  document.getElementById('detailPanel').classList.add('active');
+  document.getElementById('detailPanel').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function closeDetail(){document.getElementById('detailPanel').classList.remove('active');selectedDay=null;}
+function changeMonth(dir){viewMonth+=dir;if(viewMonth>11){viewMonth=0;viewYear++;}if(viewMonth<0){viewMonth=11;viewYear--;}selectedDay=null;closeDetail();render();}
+
+function toggleFlightFields(){
+  const t=document.getElementById('fType').value;
+  document.getElementById('flightFields').style.display=(t==='flight'||t==='layover'||t==='medical')?'block':'none';
+  document.getElementById('postScheduleGroup').style.display=(t==='leave'||t==='sick')?'block':'none';
+  if(t!=='leave'&&t!=='sick')document.getElementById('fPostSchedule').checked=false;
+}
+function checkDutyLimit(date){
+  const w=document.getElementById('dutyLimitWarning'),b=document.getElementById('btnSaveEntry');
+  if(!date||!editingId===false){// editing existing = doesn't count
+    const count=dutiesOnDate(date,editingId);
+    if(count>=MAX_DUTIES_PER_DAY&&!editingId){w.style.display='block';b.disabled=true;b.style.opacity='.5';}
+    else{w.style.display='none';b.disabled=false;b.style.opacity='1';}
+  }
+}
+function openAddModal(ds,ev){
+  if(ev)ev.stopPropagation();editingId=null;
+  document.getElementById('modalTitle').textContent='Add Roster Entry';
+  document.getElementById('editId').value='';
+  document.getElementById('fDate').value=ds||'';
+  ['fFlight','fFrom','fTo','fSTD','fSTA','fATD','fATA','fBlock','fFlyTime','fNotes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('fType').value='flight';document.getElementById('fPostSchedule').checked=false;
+  document.getElementById('dutyLimitWarning').style.display='none';
+  document.getElementById('btnSaveEntry').disabled=false;document.getElementById('btnSaveEntry').style.opacity='1';
+  if(ds)checkDutyLimit(ds);
+  toggleFlightFields();document.getElementById('overlay').classList.add('active');
+}
+document.addEventListener('change',e=>{if(e.target.id==='fDate')checkDutyLimit(e.target.value);});
+function openEditModal(id){
+  const e=loadData().find(x=>x.id===id);if(!e)return;editingId=id;
+  document.getElementById('modalTitle').textContent='Edit Roster Entry';
+  document.getElementById('editId').value=id;document.getElementById('fDate').value=e.date;document.getElementById('fType').value=e.type;
+  document.getElementById('fFlight').value=e.flight||'';document.getElementById('fFrom').value=e.from||'';document.getElementById('fTo').value=e.to||'';
+  document.getElementById('fSTD').value=e.std||'';document.getElementById('fSTA').value=e.sta||'';
+  document.getElementById('fATD').value=e.atd||'';document.getElementById('fATA').value=e.ata||'';
+  document.getElementById('fBlock').value=e.block||'';document.getElementById('fFlyTime').value=e.flyTime||'';
+  document.getElementById('fNotes').value=e.notes||'';document.getElementById('fPostSchedule').checked=!!e.postSchedule;
+  document.getElementById('dutyLimitWarning').style.display='none';
+  document.getElementById('btnSaveEntry').disabled=false;document.getElementById('btnSaveEntry').style.opacity='1';
+  toggleFlightFields();document.getElementById('overlay').classList.add('active');
+}
+function closeModal(){document.getElementById('overlay').classList.remove('active');}
+function saveEntry(){
+  const date=document.getElementById('fDate').value;if(!date){alert('Please select a date.');return;}
+  // Check limit for new entries
+  if(!editingId&&!canAddDuty(date)){alert(`⚡ Max ${MAX_DUTIES_PER_DAY} duties per day reached.\nDelete one first.`);return;}
+  const type=document.getElementById('fType').value;
+  const entry={id:editingId||'s'+Date.now(),date,type,
+    flight:document.getElementById('fFlight').value.trim().toUpperCase(),
+    from:document.getElementById('fFrom').value.trim().toUpperCase(),
+    to:document.getElementById('fTo').value.trim().toUpperCase(),
+    std:document.getElementById('fSTD').value,sta:document.getElementById('fSTA').value,
+    atd:document.getElementById('fATD').value,ata:document.getElementById('fATA').value,
+    block:document.getElementById('fBlock').value,flyTime:document.getElementById('fFlyTime').value,
+    notes:document.getElementById('fNotes').value.trim(),
+    postSchedule:(type==='leave'||type==='sick')?document.getElementById('fPostSchedule').checked:false,
+  };
+  let data=loadData();
+  if(editingId)data=data.map(e=>e.id===editingId?entry:e);else data.push(entry);
+  saveData(data);closeModal();
+  const[y,m,d]=date.split('-').map(Number);viewYear=y;viewMonth=m-1;selectedDay=d;render();
+}
+function deleteEntry(id){if(!confirm('Delete this entry?'))return;saveData(loadData().filter(e=>e.id!==id));render();if(selectedDay)showDetail(selectedDay);}
+
+function openSummaryModal(){
+  const s=loadSummaries()[summaryKey()]||{};
+  document.getElementById('sBlockHours').value=s.blockHours||'';document.getElementById('sPerdiem').value=s.perdiem||'';
+  document.getElementById('sDaysOff').value=s.daysOff!==undefined?s.daysOff:'';
+  document.getElementById('sYdoUsed').value=s.ydoUsed!==undefined?s.ydoUsed:'';
+  document.getElementById('sYdoTotal').value=s.ydoTotal!==undefined?s.ydoTotal:'';
+  document.getElementById('sSwap').value=s.swap!==undefined?s.swap:'';
+  document.getElementById('summaryOverlay').classList.add('active');
+}
+function closeSummaryModal(){document.getElementById('summaryOverlay').classList.remove('active');}
+function saveSummaryModal(){
+  const sum=loadSummaries();
+  sum[summaryKey()]={blockHours:document.getElementById('sBlockHours').value.trim(),perdiem:document.getElementById('sPerdiem').value.trim(),daysOff:document.getElementById('sDaysOff').value,ydoUsed:document.getElementById('sYdoUsed').value,ydoTotal:document.getElementById('sYdoTotal').value,swap:document.getElementById('sSwap').value};
+  saveSummaries(sum);markDirty();closeSummaryModal();renderStats();
+}
+
+// ── Import / OCR ──────────────────────────────────────────────────────────────
+let ocrRows=[];
+function openOcrModal(){
+  document.getElementById('ocrMonth').value=viewMonth+1;document.getElementById('ocrYear').value=viewYear;
+  ocrRows=[];
+  document.getElementById('ocrPreview').style.display='none';document.getElementById('ocrStatus').style.display='none';
+  document.getElementById('ocrResultArea').style.display='none';document.getElementById('ocrSaveBtn').style.display='none';
+  document.getElementById('ocrTableBody').innerHTML='';document.getElementById('ocrRawText').value='';
+  document.getElementById('ocrFileInput').value='';document.getElementById('ocrOverlay').classList.add('active');
+}
+function closeOcrModal(){document.getElementById('ocrOverlay').classList.remove('active');}
+
+const dz=document.getElementById('dropZone');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('dragover');});
+dz.addEventListener('dragleave',()=>dz.classList.remove('dragover'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('dragover');if(e.dataTransfer.files[0])processOcrFile(e.dataTransfer.files[0]);});
+function handleOcrFile(ev){if(ev.target.files[0])processOcrFile(ev.target.files[0]);}
+
+function processOcrFile(file){
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const img=document.getElementById('ocrPreview');img.src=ev.target.result;img.style.display='block';
+    const st=document.getElementById('ocrStatus');st.style.display='block';
+    st.innerHTML='🔍 Scanning image… ~15 sec. You can also type duties manually above while waiting.';
+    Tesseract.recognize(ev.target.result,'eng',{tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789/ ',tessedit_pageseg_mode:'6'})
+    .then(({data})=>{
+      const cleaned=buildCleanText(data);
+      document.getElementById('ocrRawText').value=cleaned;
+      st.innerHTML=`✅ Image scanned — ${cleaned.split('\n').filter(Boolean).length} days detected. Check the text above and fix any mistakes, then click Preview.`;
+    })
+    .catch(err=>{st.innerHTML='❌ Scan failed: '+err.message+'. Please type duties manually above.';});
+  };
+  reader.readAsDataURL(file);
+}
+
+function buildCleanText(data){
+  const year=parseInt(document.getElementById('ocrYear').value),month=parseInt(document.getElementById('ocrMonth').value);
+  const dim=new Date(year,month,0).getDate();
+  const words=data.words.filter(w=>w.text.trim().length>0&&w.confidence>25);
+  const imgW=words.reduce((mx,w)=>Math.max(mx,w.bbox.x1),0)||1400,colW=imgW/7;
+  const wCol=w=>Math.floor((w.bbox.x0+w.bbox.x1)/2/colW);
+  const dayMap={};
+  words.forEach(w=>{const n=parseInt(w.text);if(!isNaN(n)&&n>=1&&n<=dim&&/^\d{1,2}$/.test(w.text.trim()))if(!dayMap[n]||w.confidence>dayMap[n].word.confidence)dayMap[n]={y:(w.bbox.y0+w.bbox.y1)/2,col:wCol(w),word:w};});
+  const dayNumSet=new Set(Object.keys(dayMap).map(Number)),cellH=imgW/7*1.2,dayDuties={};
+  Object.entries(dayMap).forEach(([ds,pos])=>{
+    const dw=words.filter(w=>{const wn=parseInt(w.text);if(dayNumSet.has(wn)&&/^\d{1,2}$/.test(w.text.trim()))return false;const wc=wCol(w),wy=(w.bbox.y0+w.bbox.y1)/2;return Math.abs(wc-pos.col)<=1&&wy>pos.y&&wy<pos.y+cellH;}).sort((a,b)=>a.bbox.y0-b.bbox.y0);
+    const tokens=[],texts=dw.map(w=>w.text.trim().toUpperCase());
+    for(let i=0;i<texts.length;i++){const t=texts[i];if(t==='PNC'&&tokens.length>0)tokens[tokens.length-1]+=' PNC';else if(t.length>0)tokens.push(t);}
+    if(tokens.length)dayDuties[parseInt(ds)]=tokens;
+  });
+  const lines=[];for(let d=1;d<=dim;d++)if(dayDuties[d])lines.push(`${d} ${dayDuties[d].join(' ')}`);
+  return lines.join('\n');
+}
+
+function parseRawText(){
+  const year=parseInt(document.getElementById('ocrYear').value),month=parseInt(document.getElementById('ocrMonth').value);
+  const dim=new Date(year,month,0).getDate(),text=document.getElementById('ocrRawText').value,results=[];
+  // Track duties per date to enforce max 2
+  const dateCounts={};
+  text.split('\n').forEach(line=>{
+    line=line.trim();if(!line)return;
+    const parts=line.split(/\s+/),day=parseInt(parts[0]);
+    if(isNaN(day)||day<1||day>dim)return;
+    const ds=`${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const tokens=parts.slice(1);let i=0;
+    while(i<tokens.length){
+      const t=tokens[i].toUpperCase();let code=t;
+      if(i+1<tokens.length&&tokens[i+1].toUpperCase()==='PNC'){code=t+' PNC';i++;}
+      i++;if(!code)continue;
+      const base=code.replace(/\s*PNC$/i,'').trim(),isPNC=code.toUpperCase().includes('PNC');
+      const count=dateCounts[ds]||0;
+      if(count>=MAX_DUTIES_PER_DAY)continue; // skip if already 2 duties for this day
+      dateCounts[ds]=(count)+1;
+      if(DUTY_MAP[base])results.push({date:ds,code:base,type:DUTY_MAP[base],isPNC:false});
+      else if(/^\d{1,3}$/.test(base))results.push({date:ds,code:isPNC?`${base} PNC`:base,type:'flight',isPNC});
+      else if(base.length>0)results.push({date:ds,code:base,type:'ground',isPNC:false});
+    }
+  });
+  if(!results.length){alert('No duties found.\n\nMake sure each line starts with the day number:\n1 68\n3 212 PNC\n13 164 163\n26 AL');return;}
+  ocrRows=results;renderOcrTable(results);
+}
+
+function renderOcrTable(rows){
+  document.getElementById('ocrTableBody').innerHTML=rows.map((r,i)=>`
+    <tr>
+      <td><input type="date" value="${r.date}" onchange="ocrRows[${i}].date=this.value"></td>
+      <td><input type="text" value="${r.code}" onchange="ocrRows[${i}].code=this.value" style="width:75px"></td>
+      <td><select onchange="ocrRows[${i}].type=this.value">${['flight','leave','sick','layover','medical','ground','off'].map(t=>`<option value="${t}"${r.type===t?' selected':''}>${t}</option>`).join('')}</select></td>
+      <td style="text-align:center;"><input type="checkbox" ${r.isPNC?'checked':''} onchange="ocrRows[${i}].isPNC=this.checked" title="PNC"></td>
+      <td><button class="ocr-row-del" onclick="ocrRows.splice(${i},1);renderOcrTable(ocrRows)">✕</button></td>
+    </tr>`).join('');
+  document.getElementById('ocrResultArea').style.display='block';document.getElementById('ocrSaveBtn').style.display='inline-block';
+}
+function addOcrRow(){const y=document.getElementById('ocrYear').value,m=document.getElementById('ocrMonth').value;ocrRows.push({date:`${y}-${String(m).padStart(2,'0')}-01`,code:'',type:'flight',isPNC:false});renderOcrTable(ocrRows);}
+function commitOcrImport(){
+  const existing=loadData();
+  // Enforce max 2 per day against existing data
+  const skipped=[];
+  const newEntries=[];
+  ocrRows.forEach(r=>{
+    const existingCount=existing.filter(e=>e.date===r.date).length;
+    const addedCount=newEntries.filter(e=>e.date===r.date).length;
+    if(existingCount+addedCount>=MAX_DUTIES_PER_DAY){skipped.push(r.date);return;}
+    newEntries.push({
+      id:'ocr_'+Date.now()+'_'+Math.random().toString(36).slice(2),
+      date:r.date,type:r.type,
+      flight:r.type==='flight'?('BR'+r.code.replace(/\s*PNC$/i,'').replace(/^BR/i,'')):'',
+      from:'',to:'',std:'',sta:'',atd:'',ata:'',block:'',flyTime:'',
+      notes:r.isPNC?'PNC':(DUTY_MAP[r.code.toUpperCase()]?r.code.toUpperCase():r.code),postSchedule:false,
+    });
+  });
+  saveData([...existing,...newEntries]);
+  const y=parseInt(document.getElementById('ocrYear').value),m=parseInt(document.getElementById('ocrMonth').value)-1;
+  viewYear=y;viewMonth=m;closeOcrModal();render();
+  if(skipped.length){const unique=[...new Set(skipped)];alert(`✅ Imported ${newEntries.length} entries.\n\n⚡ Skipped ${skipped.length} duties on ${unique.length} day(s) that already had ${MAX_DUTIES_PER_DAY} duties:\n${unique.join(', ')}`);}
+}
+
+['overlay','summaryOverlay','ocrOverlay'].forEach(id=>{document.getElementById(id).addEventListener('click',e=>{if(e.target.id===id)document.getElementById(id).classList.remove('active');});});
+seedData();
+render();
+</script>
+</body>
+</html>
