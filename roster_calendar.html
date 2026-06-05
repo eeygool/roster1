@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>eeygool's Flight Roster</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f0faf0; color: #2d4a2d; min-height: 100vh; }
+
+  header {
+    background: linear-gradient(135deg, #c8efc8, #daf5da);
+    border-bottom: 1px solid #a8d8a8;
+    padding: 14px 24px;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+  }
+  .header-left h1 { font-size: 1.1rem; font-weight: 700; color: #2e7d32; letter-spacing: 0.5px; }
+  .header-left p  { font-size: 0.72rem; color: #5a8a5a; margin-top: 2px; }
+  .header-right { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+  button {
+    padding: 6px 14px; border-radius: 6px; border: none; cursor: pointer;
+    font-size: 0.78rem; font-weight: 600; transition: all 0.15s;
+  }
+  .btn-primary   { background: #4caf50; color: #fff; }
+  .btn-primary:hover { background: #388e3c; }
+  .btn-secondary { background: #e8f5e9; color: #2e7d32; border: 1px solid #a8d8a8; }
+  .btn-secondary:hover { background: #c8efc8; }
+  .btn-danger    { background: #fce4ec; color: #c62828; border: 1px solid #f48fb1; }
+  .btn-danger:hover { background: #f8bbd0; }
+  .btn-ocr       { background: #fff8e1; color: #e65100; border: 1px solid #ffcc80; }
+  .btn-ocr:hover { background: #ffe0b2; }
+  .btn-save      { background: #e3f2fd; color: #1565c0; border: 1px solid #90caf9; }
+  .btn-save:hover{ background: #bbdefb; }
+  .btn-io        { background: #f3e5f5; color: #6a1b9a; border: 1px solid #ce93d8; }
+  .btn-io:hover  { background: #e1bee7; }
+
+  /* Import/Export modal cards */
+  .io-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 4px; }
+  .io-card {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 8px; padding: 20px 12px; border-radius: 12px; border: 2px solid transparent;
+    cursor: pointer; font-weight: 700; font-size: 0.82rem; text-align: center;
+    transition: all 0.15s; min-height: 100px;
+  }
+  .io-card .io-icon { font-size: 2rem; line-height: 1; }
+  .io-card .io-sub  { font-size: 0.68rem; font-weight: 400; opacity: 0.75; margin-top: 2px; }
+  .io-card.save  { background: #e8f5e9; color: #2e7d32; border-color: #a8d8a8; }
+  .io-card.save:hover  { background: #c8efc8; border-color: #4caf50; }
+  .io-card.load  { background: #e3f2fd; color: #1565c0; border-color: #90caf9; }
+  .io-card.load:hover  { background: #bbdefb; border-color: #1976d2; }
+  .io-card.ecsv  { background: #f3e5f5; color: #6a1b9a; border-color: #ce93d8; }
+  .io-card.ecsv:hover  { background: #e1bee7; border-color: #8e24aa; }
+  .io-card.icsv  { background: #fff8e1; color: #e65100; border-color: #ffcc80; }
+  .io-card.icsv:hover  { background: #ffe0b2; border-color: #fb8c00; }
+  .io-card.ocr   { background: #fce4ec; color: #c62828; border-color: #f48fb1; }
+  .io-card.ocr:hover   { background: #f8bbd0; border-color: #e53935; }
+  @media (max-width: 420px) {
+    .io-grid { grid-template-columns: 1fr; }
+    .io-card { flex-direction: row; min-height: 64px; justify-content: flex-start; padding: 14px 16px; gap: 14px; }
+    .io-card .io-icon { font-size: 1.6rem; }
+  }
+
+  .nav {
+    display: flex; align-items: center; justify-content: center;
+    gap: 16px; padding: 14px; background: #e8f5e9;
+  }
+  .nav h2 { font-size: 1rem; font-weight: 700; min-width: 180px; text-align: center; color: #2e7d32; }
+  .nav-btn {
+    background: #fff; border: 1px solid #a8d8a8; color: #2e7d32;
+    width: 32px; height: 32px; border-radius: 6px; font-size: 1rem;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+  }
+  .nav-btn:hover { background: #c8efc8; }
+
+  /* Save banner */
+  .save-banner {
+    display: none; background: #e3f2fd; border-bottom: 1px solid #90caf9;
+    padding: 8px 20px; font-size: 0.78rem; color: #1565c0;
+    align-items: center; gap: 12px; flex-wrap: wrap;
+  }
+  .save-banner.active { display: flex; }
+  .save-banner strong { font-weight: 700; }
+
+  .legend {
+    display: flex; gap: 10px; padding: 6px 16px; background: #f0faf0;
+    flex-wrap: wrap; border-bottom: 1px solid #c8efc8;
+  }
+  .legend-item { display: flex; align-items: center; gap: 4px; font-size: 0.7rem; color: #5a8a5a; }
+  .dot { width: 10px; height: 10px; border-radius: 3px; }
+  .dot-flight  { background: #64b5f6; }
+  .dot-pnc     { background: #ce93d8; }
+  .dot-ca      { background: #90caf9; }
+  .dot-sb-home    { background: #ff8a65; }
+  .dot-sb-airport { background: #ff8a65; }
+  .dot-leave   { background: #ffb74d; }
+  .dot-sick    { background: #f48fb1; }
+  .dot-layover { background: #ce93d8; }
+  .dot-medical { background: #4db6ac; }
+  .dot-off     { background: #c8e6c9; }
+
+  .calendar-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    gap: 1px; background: #a8d8a8; padding: 1px;
+  }
+  .day-header {
+    background: #daf5da; text-align: center; padding: 8px 4px;
+    font-size: 0.7rem; font-weight: 700; color: #4a7a4a;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .day-cell {
+    background: #fff; min-height: 90px; padding: 4px;
+    cursor: pointer; position: relative; transition: background 0.1s;
+  }
+  .day-cell:hover { background: #f0faf0; }
+  .day-cell.empty { background: #f5fdf5; cursor: default; }
+  .day-cell.today .day-num { background: #4caf50; color: #fff; border-radius: 50%; }
+  .day-num {
+    font-size: 0.78rem; font-weight: 600; color: #7aaa7a; margin-bottom: 3px;
+    width: 22px; height: 22px; display: flex; align-items: center; justify-content: center;
+  }
+  .duty-chip {
+    border-radius: 4px; padding: 2px 5px; font-size: 0.65rem;
+    font-weight: 600; margin-bottom: 2px; line-height: 1.3; overflow: hidden;
+  }
+  .duty-chip.flight      { background: #bbdefb; color: #1565c0; }
+  .duty-chip.flight.pnc  { background: #e1bee7; color: #6a1b9a; }
+  .duty-chip.ca          { background: #e3f2fd; color: #42a5f5; }
+  .duty-chip.sb-home     { background: #fff3e0; color: #bf360c; }
+  .duty-chip.sb-airport  { background: #fff3e0; color: #bf360c; }
+  .duty-chip.leave       { background: #fff9c4; color: #e65100; }
+  .duty-chip.sick        { background: #fce4ec; color: #c62828; }
+  .duty-chip.layover     { background: #f3e5f5; color: #6a1b9a; }
+  .duty-chip.medical     { background: #b2dfdb; color: #004d40; }
+  .duty-chip.off         { background: #e8f5e9; color: #4a7a4a; }
+  .edit-btn-hover {
+    display: none; position: absolute; top: 4px; right: 4px;
+    background: #4caf50; color: #fff; border: none;
+    border-radius: 4px; width: 20px; height: 20px;
+    font-size: 0.65rem; cursor: pointer; align-items: center; justify-content: center;
+  }
+  .day-cell:hover .edit-btn-hover { display: flex; }
+
+  .detail-panel {
+    background: #e8f5e9; border: 1px solid #a8d8a8;
+    margin: 12px 16px; border-radius: 10px; padding: 16px; display: none;
+  }
+  .detail-panel.active { display: block; }
+  .detail-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+  .detail-header h3 { font-size: 0.95rem; font-weight: 700; color: #2e7d32; }
+  .detail-close { background: none; border: none; color: #7aaa7a; font-size: 1.2rem; cursor: pointer; }
+  .detail-close:hover { color: #2d4a2d; }
+  .detail-entry {
+    background: #fff; border-radius: 8px; padding: 12px; margin-bottom: 8px;
+    border-left: 3px solid #4caf50;
+  }
+  .detail-entry.flight  { border-left-color: #64b5f6; }
+  .detail-entry.pnc     { border-left-color: #ce93d8; }
+  .detail-entry.ca      { border-left-color: #90caf9; }
+  .detail-entry.sb-home    { border-left-color: #ff8a65; }
+  .detail-entry.sb-airport { border-left-color: #ff8a65; }
+  .detail-entry.leave   { border-left-color: #ffb74d; }
+  .detail-entry.sick    { border-left-color: #f48fb1; }
+  .detail-entry.layover { border-left-color: #ce93d8; }
+  .detail-entry.medical { border-left-color: #4db6ac; }
+  .detail-row  { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 4px; }
+  .detail-field { min-width: 100px; }
+  .detail-field label { font-size: 0.65rem; color: #7aaa7a; text-transform: uppercase; display: block; }
+  .detail-field span  { font-size: 0.82rem; font-weight: 600; color: #2d4a2d; }
+  .detail-actions { display: flex; gap: 8px; margin-top: 8px; }
+
+  .stats-bar {
+    display: flex; gap: 16px; padding: 10px 16px;
+    background: #daf5da; border-top: 1px solid #a8d8a8; flex-wrap: wrap;
+  }
+  .stat { text-align: center; }
+  .stat .val { font-size: 1rem; font-weight: 700; color: #2e7d32; }
+  .stat .lbl { font-size: 0.65rem; color: #5a8a5a; text-transform: uppercase; }
+
+  .qual-panel {
+    margin: 10px 16px 0; border-radius: 10px; padding: 14px 16px;
+    border: 1.5px solid #a8d8a8; background: #f0faf0;
+  }
+  .qual-panel h4 { font-size: 0.82rem; font-weight: 700; color: #2e7d32; margin-bottom: 10px; }
+  .qual-grid { display: flex; gap: 10px; flex-wrap: wrap; }
+  .qual-month-box {
+    flex: 1; min-width: 140px; background: #fff; border-radius: 8px;
+    padding: 10px 12px; border: 1.5px solid #c8e6c9;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .qual-month-box.warn { border-color: #ffb74d; background: #fffde7; }
+  .qual-month-box.fail { border-color: #ef9a9a; background: #fce4ec; }
+  .qm-title  { font-size: 0.72rem; font-weight: 700; color: #5a8a5a; }
+  .qual-month-box.warn .qm-title { color: #e65100; }
+  .qual-month-box.fail .qm-title { color: #c62828; }
+  .qm-months { font-size: 0.78rem; font-weight: 600; color: #2d4a2d; }
+  .qm-result {
+    margin-top: 4px; padding: 3px 7px; border-radius: 4px;
+    font-size: 0.7rem; font-weight: 700; align-self: flex-start;
+  }
+  .qm-result.ok   { background: #c8e6c9; color: #2e7d32; }
+  .qm-result.warn { background: #fff9c4; color: #e65100; }
+  .qm-result.fail { background: #fce4ec; color: #c62828; }
+  .qual-target { font-size: 0.75rem; color: #2d4a2d; }
+  .qual-target strong { color: #2e7d32; }
+  .qual-target.fail strong { color: #c62828; }
+
+  /* Overlays / Modals */
+  .overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,80,0,0.25); z-index: 100;
+    align-items: center; justify-content: center;
+  }
+  .overlay.active { display: flex; }
+  .modal {
+    background: #f0faf0; border: 1px solid #a8d8a8;
+    border-radius: 12px; padding: 24px; width: 420px; max-width: 95vw;
+    max-height: 90vh; overflow-y: auto;
+  }
+  .modal h3 { font-size: 1rem; font-weight: 700; margin-bottom: 16px; color: #2e7d32; }
+  .form-group { margin-bottom: 12px; }
+  .form-group label { display: block; font-size: 0.75rem; color: #5a8a5a; margin-bottom: 4px; }
+  .form-group input, .form-group select, .form-group textarea {
+    width: 100%; padding: 8px 10px; border-radius: 6px;
+    border: 1px solid #a8d8a8; background: #fff; color: #2d4a2d;
+    font-size: 0.82rem; outline: none;
+  }
+  .form-group input:focus, .form-group select:focus { border-color: #4caf50; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+
+  /* OCR */
+  #ocrPreview { width:100%; max-height:200px; object-fit:contain; border-radius:8px; border:1px solid #a8d8a8; margin-bottom:12px; display:none; }
+  .ocr-status { text-align:center; padding:12px; font-size:0.82rem; color:#5a8a5a; background:#e8f5e9; border-radius:8px; margin-bottom:12px; }
+  .ocr-result-table { width:100%; border-collapse:collapse; font-size:0.75rem; margin-bottom:12px; }
+  .ocr-result-table th { background:#c8efc8; padding:5px 8px; text-align:left; font-size:0.7rem; color:#2e7d32; border-bottom:1px solid #a8d8a8; }
+  .ocr-result-table td { padding:4px 8px; border-bottom:1px solid #e8f5e9; }
+  .ocr-result-table tr:hover td { background:#f0faf0; }
+  .ocr-result-table input[type=text], .ocr-result-table select { width:100%; padding:2px 4px; border:1px solid #a8d8a8; border-radius:4px; background:#fff; font-size:0.72rem; }
+  .ocr-row-del { background:none; border:none; color:#e57373; cursor:pointer; font-size:0.9rem; }
+  .drop-zone {
+    border:2px dashed #a8d8a8; border-radius:10px; padding:24px;
+    text-align:center; color:#7aaa7a; font-size:0.82rem; cursor:pointer;
+    background:#f5fdf5; transition:background 0.15s; margin-bottom:12px;
+  }
+  .drop-zone:hover, .drop-zone.dragover { background:#e8f5e9; border-color:#4caf50; }
+
+  @media (max-width:600px) {
+    .day-cell { min-height:60px; }
+    .duty-chip { font-size:0.58rem; padding:1px 3px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <h1>✈ eeygool's 🩷 Flight Roster</h1>
+    <p>Position: AP &nbsp;|&nbsp; Home Base: BKK &nbsp;|&nbsp; Group: 2017K</p>
+  </div>
+  <div class="header-right">
+    <button class="btn-primary" onclick="openAddModal()">+ Add Entry</button>
+    <button class="btn-io"      onclick="openIOModal()">📥📤 Import / Export</button>
+  </div>
+</header>
+
+<!-- Save confirmation banner -->
+<div class="save-banner" id="saveBanner">
+  <span>✅ <strong>Data saved!</strong> Your roster backup file has been downloaded.</span>
+  <button class="btn-secondary" style="font-size:0.7rem;padding:3px 10px" onclick="document.getElementById('saveBanner').classList.remove('active')">✕</button>
+</div>
+
+<div class="nav">
+  <button class="nav-btn" onclick="changeMonth(-1)">‹</button>
+  <h2 id="monthTitle"></h2>
+  <button class="nav-btn" onclick="changeMonth(1)">›</button>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="dot dot-flight"></div> Flight</div>
+  <div class="legend-item"><div class="dot dot-pnc"></div> Flight (PNC)</div>
+  <div class="legend-item"><div class="dot dot-ca"></div> CA</div>
+  <div class="legend-item"><div class="dot dot-sb-home"></div> SB Home / Airport</div>
+  <div class="legend-item"><div class="dot dot-leave"></div> Annual Leave (AL)</div>
+  <div class="legend-item"><div class="dot dot-sick"></div> Sick Leave (SL) ⚠</div>
+  <div class="legend-item"><div class="dot dot-layover"></div> Layover</div>
+  <div class="legend-item"><div class="dot dot-medical"></div> Medical Check</div>
+  <div class="legend-item"><div class="dot dot-off"></div> Day Off</div>
+</div>
+
+<div class="calendar-grid" id="calGrid"></div>
+
+<div class="detail-panel" id="detailPanel">
+  <div class="detail-header">
+    <h3 id="detailDate"></h3>
+    <button class="detail-close" onclick="closeDetail()">✕</button>
+  </div>
+  <div id="detailContent"></div>
+</div>
+
+<div class="stats-bar" id="statsBar"></div>
+<div class="qual-panel"  id="qualPanel"></div>
+
+<!-- Import / Export Modal -->
+<div class="overlay" id="ioOverlay">
+  <div class="modal" style="width:460px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+      <h3 style="margin:0;">📥📤 Import / Export</h3>
+      <button class="detail-close" onclick="closeIOModal()">✕</button>
+    </div>
+    <div class="io-grid">
+
+      <!-- Save backup -->
+      <div class="io-card save" onclick="saveBackup();closeIOModal()">
+        <div class="io-icon">💾</div>
+        <div>Save Backup
+          <div class="io-sub">Download .json file</div>
+        </div>
+      </div>
+
+      <!-- Load backup -->
+      <label class="io-card load" style="cursor:pointer;">
+        <div class="io-icon">📂</div>
+        <div>Load Backup
+          <div class="io-sub">Restore from .json</div>
+        </div>
+        <input type="file" accept=".json" onchange="loadBackup(event);closeIOModal()" style="display:none">
+      </label>
+
+      <!-- Export CSV -->
+      <div class="io-card ecsv" onclick="exportCSV();closeIOModal()">
+        <div class="io-icon">⬇</div>
+        <div>Export CSV
+          <div class="io-sub">Open in Excel / Sheets</div>
+        </div>
+      </div>
+
+      <!-- Import CSV -->
+      <label class="io-card icsv" style="cursor:pointer;">
+        <div class="io-icon">⬆</div>
+        <div>Import CSV
+          <div class="io-sub">Load from .csv file</div>
+        </div>
+        <input type="file" accept=".csv" onchange="importCSV(event);closeIOModal()" style="display:none">
+      </label>
+
+      <!-- OCR image import — full width -->
+      <div class="io-card ocr" style="grid-column:1/-1;flex-direction:row;min-height:64px;justify-content:flex-start;gap:14px;padding:14px 20px;" onclick="closeIOModal();openOcrModal()">
+        <div class="io-icon">📷</div>
+        <div>Import from Photo
+          <div class="io-sub">Scan a roster screenshot with OCR</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- OCR Modal -->
+<div class="overlay" id="ocrOverlay">
+  <div class="modal" style="width:600px;">
+    <h3>📷 Import Roster from Image</h3>
+
+    <!-- Step 1: Settings + Upload -->
+    <div id="ocrStep1">
+      <div class="form-row" style="margin-bottom:10px;">
+        <div class="form-group"><label>Month</label>
+          <select id="ocrMonth">
+            <option value="1">January</option><option value="2">February</option><option value="3">March</option>
+            <option value="4">April</option><option value="5" selected>May</option><option value="6">June</option>
+            <option value="7">July</option><option value="8">August</option><option value="9">September</option>
+            <option value="10">October</option><option value="11">November</option><option value="12">December</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Year</label><input type="number" id="ocrYear" value="2026" min="2020" max="2035"></div>
+      </div>
+      <div class="form-group">
+        <label>What day of week is the 1st of this month?</label>
+        <select id="ocrFirstDow">
+          <option value="0">Sunday</option><option value="1">Monday</option><option value="2">Tuesday</option>
+          <option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option>
+        </select>
+      </div>
+      <div class="drop-zone" id="dropZone" onclick="document.getElementById('ocrFileInput').click()">
+        📂 Click or drag & drop roster image here<br>
+        <span style="font-size:0.68rem;color:#a8d8a8;">PNG, JPG, WEBP supported · Best result: full page screenshot</span>
+        <input type="file" id="ocrFileInput" accept="image/*" style="display:none" onchange="handleOcrFile(event)">
+      </div>
+      <img id="ocrPreview" alt="Roster preview">
+      <div class="ocr-status" id="ocrStatus" style="display:none"></div>
+    </div>
+
+    <!-- Step 2: Raw text editor + parse -->
+    <div id="ocrStep2" style="display:none;">
+      <p style="font-size:0.75rem;color:#2e7d32;font-weight:700;margin-bottom:6px;">✏️ Step 2 — Check the detected text, then click Parse</p>
+      <p style="font-size:0.7rem;color:#5a8a5a;margin-bottom:8px;">Each day should be on its own line: <code style="background:#e8f5e9;padding:1px 4px;border-radius:3px;">day duty [duty...]</code><br>
+      Example: <code style="background:#e8f5e9;padding:1px 4px;border-radius:3px;">3 212 PNC</code> &nbsp; <code style="background:#e8f5e9;padding:1px 4px;border-radius:3px;">13 164 163</code> &nbsp; <code style="background:#e8f5e9;padding:1px 4px;border-radius:3px;">26 AL</code> &nbsp; <code style="background:#e8f5e9;padding:1px 4px;border-radius:3px;">14 LO</code></p>
+      <textarea id="ocrRawText" rows="10" style="width:100%;padding:8px;border:1px solid #a8d8a8;border-radius:6px;font-family:monospace;font-size:0.78rem;color:#2d4a2d;background:#fff;resize:vertical;" placeholder="3 212 PNC&#10;4 6&#10;5 15&#10;13 164 163&#10;14 LO&#10;26 AL&#10;..."></textarea>
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+        <button class="btn-primary" onclick="parseRawText()">▶ Parse Duties</button>
+        <button class="btn-secondary" onclick="document.getElementById('ocrStep2').style.display='none';document.getElementById('ocrStep1').style.display='block';">← Back</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Review table -->
+    <div id="ocrResultArea" style="display:none;margin-top:12px;">
+      <p style="font-size:0.75rem;font-weight:700;color:#2e7d32;margin-bottom:6px;">✅ Step 3 — Review and edit, then save:</p>
+      <div style="max-height:220px;overflow-y:auto;">
+        <table class="ocr-result-table">
+          <thead><tr><th>Date</th><th>Duty Code</th><th>Type</th><th></th></tr></thead>
+          <tbody id="ocrTableBody"></tbody>
+        </table>
+      </div>
+      <button class="btn-secondary" style="font-size:0.72rem;margin-top:6px;" onclick="addOcrRow()">+ Add row</button>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeOcrModal()">Cancel</button>
+      <button class="btn-primary" id="ocrSaveBtn" style="display:none" onclick="commitOcrImport()">💾 Save to Calendar</button>
+    </div>
+  </div>
+</div>
+
+<!-- EVA Summary Modal -->
+<div class="overlay" id="summaryOverlay">
+  <div class="modal">
+    <h3>✈ EVA System Summary</h3>
+    <p style="font-size:0.72rem;color:#5a8a5a;margin-bottom:14px;">Enter figures from the EVA Angels summary page.</p>
+    <div class="form-row">
+      <div class="form-group"><label>Block Hours</label><input type="text" id="sBlockHours" placeholder="83:20"></div>
+      <div class="form-group"><label>Perdiem Hours</label><input type="text" id="sPerdiem" placeholder="341:20"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Days Off</label><input type="number" id="sDaysOff" min="0"></div>
+      <div class="form-group"><label>Swap</label><input type="number" id="sSwap" min="0"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>YDO Used</label><input type="number" id="sYdoUsed" min="0"></div>
+      <div class="form-group"><label>YDO Total</label><input type="number" id="sYdoTotal" min="0"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeSummaryModal()">Cancel</button>
+      <button class="btn-primary"   onclick="saveSummaryModal()">💾 Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Entry Modal -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h3 id="modalTitle">Add Roster Entry</h3>
+    <input type="hidden" id="editId">
+    <div class="form-group"><label>Date</label><input type="date" id="fDate"></div>
+    <div class="form-group">
+      <label>Duty Type</label>
+      <select id="fType" onchange="toggleFlightFields()">
+        <option value="flight">Flight</option>
+        <option value="pnc">Flight (PNC)</option>
+        <option value="ca">CA</option>
+        <option value="sb-home">Stand By (Home)</option>
+        <option value="sb-airport">Stand By (Airport)</option>
+        <option value="leave">Annual Leave (AL) ⚠</option>
+        <option value="sick">Sick Leave (SL) ⚠</option>
+        <option value="layover">Layover</option>
+        <option value="medical">Medical Check</option>
+        <option value="off">Day Off</option>
+      </select>
+    </div>
+    <div id="flightFields">
+      <div class="form-group"><label>Flight Number</label><input type="text" id="fFlight" placeholder="e.g. BR164"></div>
+      <div class="form-row">
+        <div class="form-group"><label>From</label><input type="text" id="fFrom" placeholder="BKK"></div>
+        <div class="form-group"><label>To</label><input type="text" id="fTo" placeholder="TPE"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>STD</label><input type="time" id="fSTD"></div>
+        <div class="form-group"><label>STA</label><input type="time" id="fSTA"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>ATD</label><input type="time" id="fATD"></div>
+        <div class="form-group"><label>ATA</label><input type="time" id="fATA"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Block Hours</label><input type="text" id="fBlock" placeholder="2:45"></div>
+        <div class="form-group"><label>Fly Time</label><input type="text" id="fFlyTime" placeholder="2:30"></div>
+      </div>
+    </div>
+    <div class="form-group" id="postScheduleGroup" style="display:none;background:#fce4ec;border-radius:8px;padding:10px;border:1.5px solid #f48fb1;">
+      <label style="color:#c62828;font-weight:700;font-size:0.78rem;">⚠ Changed after schedule launch?</label>
+      <label style="display:flex;align-items:center;gap:8px;margin-top:6px;cursor:pointer;font-size:0.82rem;">
+        <input type="checkbox" id="fPostSchedule" style="width:16px;height:16px;accent-color:#e53935;">
+        Yes — changed from a <b>scheduled flight</b> after roster was published
+      </label>
+      <p style="font-size:0.68rem;color:#e65100;margin-top:4px;">If checked, counts toward your 3-day AL+SL limit.</p>
+    </div>
+    <div class="form-group"><label>Notes</label><textarea id="fNotes" rows="2" placeholder="Optional notes..."></textarea></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary"   onclick="saveEntry()">💾 Save</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/tesseract.js@4/dist/tesseract.min.js"></script>
+<script>
+// ── Storage ───────────────────────────────────────────────────────────────────
+const STORAGE_KEY = 'rosterData_v2';
+const SUMMARY_KEY = 'rosterSummary_v1';
+function loadData()       { try { return JSON.parse(localStorage.getItem(STORAGE_KEY))||[]; } catch { return []; } }
+function saveData(d)      { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
+function loadSummaries()  { try { return JSON.parse(localStorage.getItem(SUMMARY_KEY))||{}; } catch { return {}; } }
+function saveSummaries(s) { localStorage.setItem(SUMMARY_KEY, JSON.stringify(s)); }
+function summaryKey()     { return `${viewYear}-${String(viewMonth+1).padStart(2,'0')}`; }
+
+// ── Save / Load Backup ────────────────────────────────────────────────────────
+function saveBackup() {
+  const backup = {
+    version: 2,
+    exportedAt: new Date().toISOString(),
+    rosterData: loadData(),
+    summaries: loadSummaries(),
+  };
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `eeygool_roster_backup_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  // Show banner
+  const banner = document.getElementById('saveBanner');
+  banner.classList.add('active');
+  setTimeout(() => banner.classList.remove('active'), 4000);
+}
+
+function loadBackup(event) {
+  const file = event.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const backup = JSON.parse(e.target.result);
+      if (backup.rosterData) {
+        if (!confirm(`Load backup from ${backup.exportedAt ? backup.exportedAt.slice(0,10) : 'unknown date'}?\n\nThis will REPLACE all current roster data.`)) return;
+        saveData(backup.rosterData);
+        if (backup.summaries) saveSummaries(backup.summaries);
+        render();
+        alert('✅ Backup loaded successfully!');
+      } else {
+        alert('❌ Invalid backup file.');
+      }
+    } catch { alert('❌ Could not read file. Make sure it is a valid roster backup.'); }
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// ── Seed ──────────────────────────────────────────────────────────────────────
+function seedData() {
+  if (loadData().length) return;
+  const seed = [
+    { id:'m1',  date:'2026-05-01', type:'off',     flight:'',      from:'', to:'', std:'', sta:'', atd:'', ata:'', block:'', flyTime:'', notes:'DO' },
+    { id:'m2',  date:'2026-05-02', type:'off',     flight:'',      from:'', to:'', std:'', sta:'', atd:'', ata:'', block:'', flyTime:'', notes:'DO' },
+    { id:'m3',  date:'2026-05-03', type:'flight',  flight:'BR212', from:'', to:'', std:'', sta:'', atd:'', ata:'', block:'', flyTime:'', notes:'PNC' },
+    { id:'m4',  date:'2026-05-04', type:'flight',  flight:'BR6',   from:'', to:'', std:'', sta:'', atd:'', ata:'', block:'', flyTime:'', notes:'' },
+    { id:'m5',  date:'2026-05-05', type:'flight',  flight:'BR15',  from:'', to:'', std:'', sta:'', atd:'', ata:'', block:'', flyTime:'', notes:'' },
+    { id:'m6',  date:'2026-05-06', type:'flight',  flight:'BR15',  from:'', to:'', std:'', sta:'', atd:'', ata:'', block:'', flyTime:'', notes:'' },
+    { id:'m7',  date:'2026-05-07', type:'flight',  flight:'BR15',  from:'', to:'', std:'', sta:'', atd:'', ata:'', block:'', flyTime:'', notes:'' },
+    { id:'m8',  date:'2026-05-07', type:'flight',  flight:'BR211', from:'', to:'', std:'', sta:'', atd:'', ata:'', block:'', flyTime:'', notes:'PNC' },
+    { id:'m9',  date:'2026-05-08', type:'off',     flight:'',      from:'', to:'', std:'', sta:'', atd:'', ata:'', block:'', flyTime:'', notes:'DO' },
+    { id:'m10', date:'2026-05-09', type:'off',     flight:'',      from:'', to:'', std:'', sta:'', atd:'', ata:'', block:'', flyTime:'', notes:'DO' },
+    { id:'m11', date:'2026-05-10', type:'off',     flight:'',      from:'', to:'', std:'', sta:'', atd:'', ata:'', block:'', flyTime:'', notes:'DO' },
+    { id:'m12', date:'2026-05-11', type:'flight',  flight:'BR202', from:'', to:'', std:'', sta:'', atd:'', ata:'', block:'', flyTime:'', notes:'' },
+    { id:'m13', date:'2026-05-12', type:'medical', flight:'',      from:'BKK', to:'', std:'', sta:'', atd:'', ata:'', block:'', flyTime:'', notes:'MC' },
+    { id:'m14', date:'2026-05-13', type:'flight',  flight:'BR164', from:'BKK', to:'TPE', std:'', sta:'', atd:'', ata:'', block:'', flyTime:'', notes:'' },
+    { id:'m15', date:'2026-05-13', type:'flight',  flight:'BR163', from:'TPE', to:'BKK', std:'', sta:'', atd:'', ata:'', block:'', flyTime:'', notes:'' },
+    { id:'m16', date:'2026-05-14', type:'layover', flight:'',      from:'', to:'', std:'', sta:'', atd:'', ata:'', block:'', flyTime:'', notes:'L/O' },
+    { id:'m17', date:'2026-05-15', type:'flight',  flight:'BR211', from:'', to:'', std:'', sta:'', atd:'', ata:'', block:'', flyTime:'', notes:'PNC' },
+    { id:'m18', date:'2026-05-16', type:'off',     flight:'',      from:'', to:'', std:'', sta:'', atd:'', ata:'', block:'', flyTime:'', notes:'DOX' },
+    { id:'m19', date:'2026-05-17', type:'off',     flight:'',      from:'', to:'', std:'', sta:'', atd:'', ata:'', block:'', flyTime:'', notes:'DOX' },
+    { id:'m20', date:'2026-05-18', type:'off',     flight:'',      from:'', to:'', std:'', sta:'', atd:'', ata:'', block:'', flyTime:'', notes:'DO' },
+    { id:'m21', date:'2026-05-19', type:'off',     flight:'',      from:'', to:'', std:'', sta:'', atd:'', ata:'', block:'', flyTime:'', notes:'DO' },
+    { id:'m22', date:'2026-05-20', type:'off',     flight:'',      from:'', to:'', std:'', sta:'', atd:'', ata:'', block:'', flyTime:'', notes:'DO' },
+    { id:'m23', date:'2026-05-21', type:'flight',  flight:'BR68',  from:'', to:'', std:'', sta:'', atd:'', ata:'', block:'', flyTime:'', notes:'PNC' },
+    { id:'m24', date:'2026-05-22', type:'flight',  flight:'BR12',  from:'', to:'', std:'', sta:'', atd:'', ata:'', block:'', flyTime:'', notes:'' },
+    { id:'m25', date:'2026-05-23', type:'flight',  flight:'BR11',  from:'', to:'', std:'', sta:'', atd:'', ata:'', block:'', flyTime:'', notes:'' },
+    { id:'m26', date:'2026-05-24', type:'flight',  flight:'BR11',  from:'', to:'', std:'', sta:'', atd:'', ata:'', block:'', flyTime:'', notes:'' },
+    { id:'m27', date:'2026-05-25', type:'flight',  flight:'BR11',  from:'', to:'', std:'', sta:'', atd:'', ata:'', block:'', flyTime:'', notes:'' },
+    { id:'m28', date:'2026-05-25', type:'flight',  flight:'BR211', from:'', to:'', std:'', sta:'', atd:'', ata:'', block:'', flyTime:'', notes:'PNC' },
+    { id:'m29', date:'2026-05-26', type:'leave',   flight:'',      from:'', to:'', std:'', sta:'', atd:'', ata:'', block:'', flyTime:'', notes:'AL' },
+    { id:'m30', date:'2026-05-27', type:'leave',   flight:'',      from:'', to:'', std:'', sta:'', atd:'', ata:'', block:'', flyTime:'', notes:'AL' },
+    { id:'m31', date:'2026-05-28', type:'leave',   flight:'',      from:'', to:'', std:'', sta:'', atd:'', ata:'', block:'', flyTime:'', notes:'AL' },
+    { id:'m32', date:'2026-05-29', type:'flight',  flight:'BR67',  from:'', to:'', std:'', sta:'', atd:'', ata:'', block:'', flyTime:'', notes:'' },
+    { id:'m33', date:'2026-05-30', type:'layover', flight:'',      from:'', to:'', std:'', sta:'', atd:'', ata:'', block:'', flyTime:'', notes:'LO' },
+    { id:'m34', date:'2026-05-31', type:'flight',  flight:'BR68',  from:'', to:'', std:'', sta:'', atd:'', ata:'', block:'', flyTime:'', notes:'' },
+  ];
+  saveData(seed);
+  const sum = loadSummaries();
+  if (!sum['2026-05']) {
+    sum['2026-05'] = { blockHours:'83:20', perdiem:'341:20', daysOff:'10', ydoUsed:'52', ydoTotal:'124', swap:'2' };
+    saveSummaries(sum);
+  }
+}
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let viewYear = 2026, viewMonth = 4, selectedDay = null, editingId = null;
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function render() { renderGrid(); renderStats(); renderQualPanel(); if (selectedDay!==null) showDetail(selectedDay); }
+
+const MONTHS_FULL  = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function renderGrid() {
+  document.getElementById('monthTitle').textContent = `${MONTHS_FULL[viewMonth]} ${viewYear}`;
+  let html = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<div class="day-header">${d}</div>`).join('');
+  const firstDay = new Date(viewYear,viewMonth,1).getDay();
+  const dim = new Date(viewYear,viewMonth+1,0).getDate();
+  const today = new Date();
+  const data = loadData();
+  for (let i=0;i<firstDay;i++) html+=`<div class="day-cell empty"></div>`;
+  for (let d=1;d<=dim;d++) {
+    const ds = `${viewYear}-${String(viewMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const entries = data.filter(e=>e.date===ds);
+    const isToday = today.getFullYear()===viewYear&&today.getMonth()===viewMonth&&today.getDate()===d;
+    const dow = new Date(viewYear,viewMonth,d).getDay();
+    let chips='';
+    if (!entries.length) { /* no auto-fill on empty days */ }
+    else chips=entries.map(e=>{
+      const fn=(e.flight||'FLT').replace(/^BR/i,'');
+      const isPNC=e.type==='pnc'||!!e.pnc||(e.notes||'').toUpperCase().includes('PNC');
+      const isLO=(e.notes||'').toUpperCase()==='LO';
+      const isDOX=(e.notes||'').toUpperCase()==='DOX';
+      const rp=e.from&&e.to?`<br>${e.from}→${e.to}`:e.from?`<br>${e.from}`:'';
+      const tp=(e.atd||e.std)?`<br>${e.atd||e.std}${(e.ata||e.sta)?' – '+(e.ata||e.sta):''}`:'' ;
+      const isFlight=e.type==='flight'||e.type==='pnc';
+      const isCA=e.type==='ca';
+      const label=isFlight?`${fn}${isPNC?' PNC':''}${rp}${tp}`:
+                  isCA?`${fn} CA${rp}${tp}`:
+                  e.type==='leave' ?(e.postSchedule?'AL ⚠ (changed)':'AL'):
+                  e.type==='sick'  ?(e.postSchedule?'SL ⚠ (changed)':'SL'):
+                  e.type==='layover'?(isLO?'LO':'L/O'):
+                  e.type==='medical'?'MC':e.type==='sb-home'?'SB/H':e.type==='sb-airport'?'SB/A':isDOX?'DOX':'DO';
+      const cls=isCA?'duty-chip ca':isFlight?`duty-chip flight${isPNC?' pnc':''}`:`duty-chip ${e.type}`;
+      return `<div class="${cls}" title="${e.notes||''}">${label}</div>`;
+    }).join('');
+    html+=`<div class="day-cell${isToday?' today':''}" onclick="dayClick(${d},event)">
+      <div class="day-num">${d}</div>${chips}
+      <button class="edit-btn-hover" onclick="openAddModal('${ds}',event)">✎</button>
+    </div>`;
+  }
+  document.getElementById('calGrid').innerHTML=html;
+}
+
+function renderStats() {
+  const data=loadData().filter(e=>{const[y,m]=e.date.split('-').map(Number);return y===viewYear&&m===viewMonth+1;});
+  const flights=data.filter(e=>e.type==='flight'||e.type==='pnc'||e.type==='ca');
+  const leaveDays=data.filter(e=>e.type==='leave').length;
+  const sickDays=data.filter(e=>e.type==='sick').length;
+  const layovers=data.filter(e=>e.type==='layover').length;
+  const alslC=data.filter(e=>(e.type==='leave'||e.type==='sick')&&e.postSchedule).length;
+  const s=loadSummaries()[summaryKey()]||{};
+  const bh=s.blockHours||'—',pd=s.perdiem||'—',dof=s.daysOff!==undefined?s.daysOff:'—';
+  const yu=s.ydoUsed!==undefined?s.ydoUsed:'—',yt=s.ydoTotal!==undefined?s.ydoTotal:'—',sw=s.swap!==undefined?s.swap:'—';
+  const hasEva=!!s.blockHours;
+  document.getElementById('statsBar').innerHTML=`
+    <div class="stat"><div class="val">${flights.length}</div><div class="lbl">Flights</div></div>
+    <div class="stat"><div class="val" style="${hasEva?'':'color:#aaa'}">${bh}</div><div class="lbl">Block Hrs${hasEva?' ✓':''}</div></div>
+    <div class="stat"><div class="val" style="${hasEva?'':'color:#aaa'}">${pd}</div><div class="lbl">Perdiem</div></div>
+    <div class="stat"><div class="val">${dof}</div><div class="lbl">Days Off</div></div>
+    <div class="stat"><div class="val">${yu}/${yt}</div><div class="lbl">YDO</div></div>
+    <div class="stat"><div class="val">${sw}</div><div class="lbl">Swap</div></div>
+    <div class="stat"><div class="val">${leaveDays}</div><div class="lbl">AL Days</div></div>
+    <div class="stat"><div class="val">${sickDays}</div><div class="lbl">SL Days</div></div>
+    <div class="stat" title="Post-schedule AL+SL only"><div class="val" style="color:${alslC>3?'#c62828':alslC===3?'#e65100':'#2e7d32'}">${alslC}/3</div><div class="lbl">Changed Limit</div></div>
+    <div class="stat"><button class="btn-secondary" style="font-size:0.68rem;padding:4px 8px" onclick="openSummaryModal()">✎ EVA Summary</button></div>`;
+}
+
+function addMonths(y,m0,d){let nm=m0+d;return{y:y+Math.floor(nm/12),m:((nm%12)+12)%12};}
+function alslForMonth(y,m1){return loadData().filter(e=>{const[ey,em]=e.date.split('-').map(Number);return ey===y&&em===m1&&(e.type==='leave'||e.type==='sick')&&e.postSchedule;}).length;}
+function hasFlight(y,m1){return loadData().some(e=>{const[ey,em]=e.date.split('-').map(Number);return ey===y&&em===m1&&(e.type==='flight'||e.type==='pnc'||e.type==='ca');});}
+
+function renderQualPanel() {
+  let html=`<h4>📋 FLT / DO Request Eligibility</h4>
+  <p style="font-size:0.72rem;color:#5a8a5a;margin-bottom:10px;">Only AL/SL <b>changed from scheduled flight after roster launch</b> count toward the 3-day limit.</p>
+  <div class="qual-grid">`;
+  for(let o=-1;o<=1;o++){
+    const en=addMonths(viewYear,viewMonth,o),mi=addMonths(viewYear,viewMonth,o-1),st=addMonths(viewYear,viewMonth,o-2);
+    const dot=addMonths(en.y,en.m,2),flt=addMonths(en.y,en.m,3);
+    const c1=alslForMonth(st.y,st.m+1),c2=alslForMonth(mi.y,mi.m+1),c3=alslForMonth(en.y,en.m+1),tot=c1+c2+c3;
+    const hd=hasFlight(st.y,st.m+1)&&hasFlight(mi.y,mi.m+1)&&hasFlight(en.y,en.m+1);
+    const q=tot<=3&&hd,bc=!hd||tot>3?'fail':tot===3?'warn':'',br=!hd?'fail':tot>3?'fail':tot===3?'warn':'ok';
+    const bt=!hd?'✗ Missing flight duties':tot>3?`✗ Exceeded (${tot}/3)`:tot===3?`⚠ At limit (${tot}/3)`:`✓ Eligible (${tot}/3)`;
+    html+=`<div class="qual-month-box ${bc}">
+      <div class="qm-title">Qualifying period</div>
+      <div class="qm-months">${MONTHS_SHORT[st.m]} ${st.y} – ${MONTHS_SHORT[en.m]} ${en.y}</div>
+      <div style="font-size:0.72rem;color:#5a8a5a;">AL+SL: <b>${c1}</b>+<b>${c2}</b>+<b>${c3}</b>=<b>${tot}</b>/3</div>
+      <div class="qm-result ${br}">${bt}</div>
+      ${q?`<div class="qual-target"><strong>DO → ${MONTHS_FULL[dot.m]} ${dot.y}</strong></div>
+           <div class="qual-target"><strong>FLT → ${MONTHS_FULL[flt.m]} ${flt.y}</strong></div>`
+        :`<div class="qual-target fail"><strong>Cannot request DO/FLT for ${MONTHS_FULL[dot.m]} ${dot.y}</strong></div>`}
+    </div>`;
+  }
+  html+=`</div><p style="font-size:0.68rem;color:#7aaa7a;margin-top:10px;">* PNC excluded from flight duty check · Original roster AL/SL = 0 counted</p>`;
+  document.getElementById('qualPanel').innerHTML=html;
+}
+
+// ── Detail Panel ──────────────────────────────────────────────────────────────
+function dayClick(d,e){if(e.target.classList.contains('duty-chip')||e.target.classList.contains('edit-btn-hover'))return;selectedDay=d;showDetail(d);}
+function showDetail(d){
+  const ds=`${viewYear}-${String(viewMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  const data=loadData().filter(e=>e.date===ds);
+  document.getElementById('detailDate').textContent=new Date(viewYear,viewMonth,d).toLocaleDateString('en-GB',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  if(!data.length){
+    document.getElementById('detailContent').innerHTML=`<p style="color:#5a8a5a;font-size:0.82rem;">No duties. <a href="#" onclick="openAddModal('${ds}',event)" style="color:#2e7d32">+ Add entry</a></p>`;
+  } else {
+    document.getElementById('detailContent').innerHTML=data.map(e=>`
+      <div class="detail-entry ${e.type}">
+        <div class="detail-row">
+          <div class="detail-field"><label>Type</label><span>${e.type.charAt(0).toUpperCase()+e.type.slice(1)}${e.postSchedule?' ⚠ Changed':''}</span></div>
+          ${e.flight?`<div class="detail-field"><label>Flight</label><span>${e.flight}${(e.type==='pnc'||!!e.pnc||(e.notes||'').toUpperCase().includes('PNC'))?' (PNC)':''}</span></div>`:''}
+          ${e.from?`<div class="detail-field"><label>Route</label><span>${e.from}→${e.to||'—'}</span></div>`:''}
+        </div>
+        ${e.std||e.sta?`<div class="detail-row">
+          <div class="detail-field"><label>STD</label><span>${e.std||'—'}</span></div>
+          <div class="detail-field"><label>STA</label><span>${e.sta||'—'}</span></div>
+          <div class="detail-field"><label>ATD</label><span>${e.atd||'—'}</span></div>
+          <div class="detail-field"><label>ATA</label><span>${e.ata||'—'}</span></div>
+        </div>`:''}
+        ${e.block||e.flyTime?`<div class="detail-row">
+          <div class="detail-field"><label>Block</label><span>${e.block||'—'}</span></div>
+          <div class="detail-field"><label>Fly Time</label><span>${e.flyTime||'—'}</span></div>
+        </div>`:''}
+        ${e.notes?`<div style="font-size:0.78rem;color:#5a8a5a;margin-top:4px;">${e.notes}</div>`:''}
+        <div class="detail-actions">
+          <button class="btn-secondary" style="font-size:0.72rem;padding:4px 10px" onclick="openEditModal('${e.id}')">✎ Edit</button>
+          <button class="btn-danger"    style="font-size:0.72rem;padding:4px 10px" onclick="deleteEntry('${e.id}')">✕ Delete</button>
+        </div>
+      </div>`).join('');
+  }
+  document.getElementById('detailPanel').classList.add('active');
+  document.getElementById('detailPanel').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function closeDetail(){document.getElementById('detailPanel').classList.remove('active');selectedDay=null;}
+function changeMonth(dir){viewMonth+=dir;if(viewMonth>11){viewMonth=0;viewYear++;}if(viewMonth<0){viewMonth=11;viewYear--;}selectedDay=null;closeDetail();render();}
+
+// ── Entry Modal ───────────────────────────────────────────────────────────────
+function toggleFlightFields(){
+  const t=document.getElementById('fType').value;
+  document.getElementById('flightFields').style.display=(t==='flight'||t==='pnc'||t==='ca'||t==='layover'||t==='medical')?'block':'none';
+  document.getElementById('postScheduleGroup').style.display=(t==='leave'||t==='sick')?'block':'none';
+  if(t!=='leave'&&t!=='sick') document.getElementById('fPostSchedule').checked=false;
+}
+function openAddModal(ds,ev){
+  if(ev) ev.stopPropagation(); editingId=null;
+  document.getElementById('modalTitle').textContent='Add Roster Entry';
+  document.getElementById('editId').value='';
+  document.getElementById('fDate').value=ds||'';
+  ['fFlight','fFrom','fTo','fSTD','fSTA','fATD','fATA','fBlock','fFlyTime','fNotes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('fType').value='flight';
+  document.getElementById('fPostSchedule').checked=false;
+  toggleFlightFields();
+  document.getElementById('overlay').classList.add('active');
+}
+function openEditModal(id){
+  const e=loadData().find(x=>x.id===id);if(!e)return; editingId=id;
+  document.getElementById('modalTitle').textContent='Edit Roster Entry';
+  document.getElementById('editId').value=id;
+  document.getElementById('fDate').value=e.date;
+  // Auto-upgrade old entries: flight + pnc flag → pnc type
+  const resolvedType = (e.type==='flight' && (e.pnc || (e.notes||'').toUpperCase().includes('PNC'))) ? 'pnc' : e.type;
+  document.getElementById('fType').value=resolvedType;
+  document.getElementById('fFlight').value=e.flight||'';
+  document.getElementById('fFrom').value=e.from||'';
+  document.getElementById('fTo').value=e.to||'';
+  document.getElementById('fSTD').value=e.std||'';
+  document.getElementById('fSTA').value=e.sta||'';
+  document.getElementById('fATD').value=e.atd||'';
+  document.getElementById('fATA').value=e.ata||'';
+  document.getElementById('fBlock').value=e.block||'';
+  document.getElementById('fFlyTime').value=e.flyTime||'';
+  document.getElementById('fNotes').value=e.notes||'';
+  document.getElementById('fPostSchedule').checked=!!e.postSchedule;
+  toggleFlightFields();
+  document.getElementById('overlay').classList.add('active');
+}
+function closeModal(){document.getElementById('overlay').classList.remove('active');}
+function saveEntry(){
+  const date=document.getElementById('fDate').value;if(!date){alert('Please select a date.');return;}
+  const type=document.getElementById('fType').value;
+  const entry={
+    id:editingId||'s'+Date.now(), date, type,
+    flight:document.getElementById('fFlight').value.trim().toUpperCase(),
+    from:  document.getElementById('fFrom').value.trim().toUpperCase(),
+    to:    document.getElementById('fTo').value.trim().toUpperCase(),
+    std:document.getElementById('fSTD').value,   sta:document.getElementById('fSTA').value,
+    atd:document.getElementById('fATD').value,   ata:document.getElementById('fATA').value,
+    block:document.getElementById('fBlock').value, flyTime:document.getElementById('fFlyTime').value,
+    notes:document.getElementById('fNotes').value.trim(),
+    postSchedule:(type==='leave'||type==='sick')?document.getElementById('fPostSchedule').checked:false,
+  };
+  let data=loadData();
+  if(editingId) data=data.map(e=>e.id===editingId?entry:e); else data.push(entry);
+  saveData(data); closeModal();
+  const[y,m,d]=date.split('-').map(Number);viewYear=y;viewMonth=m-1;selectedDay=d;render();
+}
+function deleteEntry(id){if(!confirm('Delete this entry?'))return;saveData(loadData().filter(e=>e.id!==id));render();if(selectedDay)showDetail(selectedDay);}
+
+// ── Summary Modal ─────────────────────────────────────────────────────────────
+function openSummaryModal(){
+  const s=loadSummaries()[summaryKey()]||{};
+  document.getElementById('sBlockHours').value=s.blockHours||'';
+  document.getElementById('sPerdiem').value=s.perdiem||'';
+  document.getElementById('sDaysOff').value=s.daysOff!==undefined?s.daysOff:'';
+  document.getElementById('sYdoUsed').value=s.ydoUsed!==undefined?s.ydoUsed:'';
+  document.getElementById('sYdoTotal').value=s.ydoTotal!==undefined?s.ydoTotal:'';
+  document.getElementById('sSwap').value=s.swap!==undefined?s.swap:'';
+  document.getElementById('summaryOverlay').classList.add('active');
+}
+function closeSummaryModal(){document.getElementById('summaryOverlay').classList.remove('active');}
+function saveSummaryModal(){
+  const sum=loadSummaries();
+  sum[summaryKey()]={blockHours:document.getElementById('sBlockHours').value.trim(),perdiem:document.getElementById('sPerdiem').value.trim(),daysOff:document.getElementById('sDaysOff').value,ydoUsed:document.getElementById('sYdoUsed').value,ydoTotal:document.getElementById('sYdoTotal').value,swap:document.getElementById('sSwap').value};
+  saveSummaries(sum);closeSummaryModal();renderStats();
+}
+
+// ── Import / Export Modal ─────────────────────────────────────────────────────
+function openIOModal()  { document.getElementById('ioOverlay').classList.add('active'); }
+function closeIOModal() { document.getElementById('ioOverlay').classList.remove('active'); }
+
+// ── OCR ───────────────────────────────────────────────────────────────────────
+let ocrRows = [];
+const DUTY_MAP = { DO:'off', DOX:'off', AL:'leave', SL:'sick', MC:'medical', LO:'layover', 'L/O':'layover', PNC:'pnc', CA:'ca', 'SB/H':'sb-home', SBH:'sb-home', 'SB/A':'sb-airport', SBA:'sb-airport', SB:'sb-home', STBY:'sb-home' };
+
+function openOcrModal() {
+  // Auto-set first day of week from current view month
+  document.getElementById('ocrMonth').value = viewMonth + 1;
+  document.getElementById('ocrYear').value  = viewYear;
+  const firstDow = new Date(viewYear, viewMonth, 1).getDay();
+  document.getElementById('ocrFirstDow').value = firstDow;
+
+  ocrRows = [];
+  document.getElementById('ocrPreview').style.display  = 'none';
+  document.getElementById('ocrStatus').style.display   = 'none';
+  document.getElementById('ocrStep1').style.display    = 'block';
+  document.getElementById('ocrStep2').style.display    = 'none';
+  document.getElementById('ocrResultArea').style.display = 'none';
+  document.getElementById('ocrSaveBtn').style.display  = 'none';
+  document.getElementById('ocrTableBody').innerHTML    = '';
+  document.getElementById('ocrRawText').value          = '';
+  document.getElementById('ocrFileInput').value        = '';
+  document.getElementById('ocrOverlay').classList.add('active');
+}
+function closeOcrModal() { document.getElementById('ocrOverlay').classList.remove('active'); }
+
+// Drag-drop
+const dz = document.getElementById('dropZone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('dragover'); if (e.dataTransfer.files[0]) processOcrFile(e.dataTransfer.files[0]); });
+function handleOcrFile(ev) { if (ev.target.files[0]) processOcrFile(ev.target.files[0]); }
+
+function processOcrFile(file) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = document.getElementById('ocrPreview');
+    img.src = ev.target.result; img.style.display = 'block';
+    const st = document.getElementById('ocrStatus');
+    st.style.display = 'block';
+    st.innerHTML = '🔍 Reading image with OCR… please wait ~15 seconds';
+
+    Tesseract.recognize(ev.target.result, 'eng', {
+      tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789/ ',
+      tessedit_pageseg_mode: '6',
+    }).then(({ data }) => {
+      st.innerHTML = '✅ Image scanned! Cleaning up text — please review below and fix if needed.';
+      const cleaned = buildCleanText(data);
+      document.getElementById('ocrRawText').value = cleaned;
+      document.getElementById('ocrStep2').style.display = 'block';
+    }).catch(err => { st.innerHTML = '❌ OCR error: ' + err.message; });
+  };
+  reader.readAsDataURL(file);
+}
+
+// Convert raw OCR data into a clean editable text format: "day code [code ...]"
+function buildCleanText(data) {
+  const year  = parseInt(document.getElementById('ocrYear').value);
+  const month = parseInt(document.getElementById('ocrMonth').value);
+  const dim   = new Date(year, month, 0).getDate();
+
+  // Higher confidence threshold to filter out noise words
+  const words = data.words.filter(w => w.text.trim().length > 0 && w.confidence > 40);
+
+  // Image dimensions
+  const imgW = words.reduce((mx, w) => Math.max(mx, w.bbox.x1), 0) || 1400;
+  const imgH = words.reduce((mx, w) => Math.max(mx, w.bbox.y1), 0) || 1800;
+  const colW = imgW / 7;
+
+  // Find day-number words: 1–2 digits, value 1–31, confidence > 50
+  const dayWords = words.filter(w => {
+    const n = parseInt(w.text);
+    return !isNaN(n) && n >= 1 && n <= dim && /^\d{1,2}$/.test(w.text.trim()) && w.confidence > 50;
+  });
+
+  // Build map: day → best candidate word
+  const dayPositions = {};
+  dayWords.forEach(w => {
+    const n = parseInt(w.text);
+    if (!dayPositions[n] || w.confidence > dayPositions[n].word.confidence)
+      dayPositions[n] = {
+        y:   (w.bbox.y0 + w.bbox.y1) / 2,
+        col: Math.floor((w.bbox.x0 + w.bbox.x1) / 2 / colW),
+        word: w,
+      };
+  });
+
+  // Exclude day-number words by exact bounding box so short flight codes (e.g. BR6)
+  // that happen to equal a valid day number are not silently dropped.
+  const dayWordBBoxes = new Set(
+    Object.values(dayPositions).map(p =>
+      `${p.word.bbox.x0},${p.word.bbox.y0},${p.word.bbox.x1},${p.word.bbox.y1}`)
+  );
+
+  // Group detected days into calendar rows by vertical proximity,
+  // then compute real cell height from the actual row-to-row spacing.
+  const sortedDayList = Object.values(dayPositions).sort((a, b) => a.y - b.y);
+  const calRows = [];
+  const rowGap  = imgH / 8; // max vertical gap to be considered the same row
+  sortedDayList.forEach(dp => {
+    const last = calRows[calRows.length - 1];
+    if (!last || Math.abs(dp.y - last[0].y) > rowGap) calRows.push([dp]);
+    else last.push(dp);
+  });
+
+  let cellH;
+  if (calRows.length >= 2) {
+    // Average spacing between consecutive rows, leave 10 % gap to avoid reading into next row
+    const spacings = [];
+    for (let i = 1; i < calRows.length; i++)
+      spacings.push(calRows[i][0].y - calRows[i-1][0].y);
+    const avg = spacings.reduce((s, v) => s + v, 0) / spacings.length;
+    cellH = avg * 0.90;
+  } else {
+    cellH = colW * 1.0; // fallback for single-row or ambiguous images
+  }
+
+  const dayDuties = {};
+
+  Object.entries(dayPositions).forEach(([dayStr, pos]) => {
+    const day    = parseInt(dayStr);
+    const dayTop = pos.word.bbox.y0;
+    const dayBot = dayTop + cellH;
+
+    // Strict pixel column boundaries — no ±1 column bleed
+    const cellLeft  = pos.col * colW;
+    const cellRight = (pos.col + 1) * colW;
+
+    const dutyWords = words.filter(w => {
+      const bk = `${w.bbox.x0},${w.bbox.y0},${w.bbox.x1},${w.bbox.y1}`;
+      if (dayWordBBoxes.has(bk)) return false;
+      const wcx = (w.bbox.x0 + w.bbox.x1) / 2;
+      const wcy = (w.bbox.y0 + w.bbox.y1) / 2;
+      // Word centre must be inside this cell's exact pixel rectangle
+      return wcx >= cellLeft && wcx < cellRight && wcy > dayTop && wcy < dayBot;
+    }).sort((a, b) => a.bbox.y0 - b.bbox.y0);
+
+    // Merge tokens: combine a flight number followed by PNC into one token
+    const tokens = [];
+    const texts = dutyWords.map(w => w.text.trim().toUpperCase());
+    for (let i = 0; i < texts.length; i++) {
+      const t = texts[i];
+      if (t === 'PNC' && tokens.length > 0) {
+        tokens[tokens.length - 1] += ' PNC';
+      } else if (t.length > 0) {
+        tokens.push(t);
+      }
+    }
+    if (tokens.length) dayDuties[day] = tokens;
+  });
+
+  // Build clean text lines
+  const lines = [];
+  for (let d = 1; d <= dim; d++) {
+    if (dayDuties[d] && dayDuties[d].length > 0)
+      lines.push(`${d} ${dayDuties[d].join(' ')}`);
+  }
+  return lines.join('\n');
+}
+
+// Parse the editable raw text into roster rows
+function parseRawText() {
+  const year  = parseInt(document.getElementById('ocrYear').value);
+  const month = parseInt(document.getElementById('ocrMonth').value);
+  const dim   = new Date(year, month, 0).getDate();
+  const text  = document.getElementById('ocrRawText').value;
+  const results = [];
+
+  text.split('\n').forEach(line => {
+    line = line.trim(); if (!line) return;
+    const parts = line.split(/\s+/);
+    const day = parseInt(parts[0]);
+    if (isNaN(day) || day < 1 || day > dim) return;
+    const ds = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+
+    // Parse remaining tokens — merge "number PNC" into one entry
+    const tokens = parts.slice(1);
+    let i = 0;
+    while (i < tokens.length) {
+      const t = tokens[i].toUpperCase();
+      let code = t;
+      // Check if next token is PNC
+      if (i + 1 < tokens.length && tokens[i + 1].toUpperCase() === 'PNC') {
+        code = t + ' PNC'; i++;
+      }
+      i++;
+
+      if (!code) continue;
+      const baseCode = code.replace(/\s*PNC$/i, '').trim();
+      const isPNC = code.toUpperCase().includes('PNC');
+
+      if (DUTY_MAP[baseCode]) {
+        results.push({ date:ds, code:baseCode, type:DUTY_MAP[baseCode], flight:'', notes:baseCode });
+      } else {
+        // Accept bare numbers (212) OR numbers with BR prefix (BR212) from OCR
+        const numPart = baseCode.replace(/^BR/i, '');
+        if (/^\d{1,3}$/.test(numPart)) {
+          const displayCode = isPNC ? `${numPart} PNC` : numPart;
+          // Deduplicate within same parse: skip if same date+flight already added
+          const alreadyAdded = results.some(x => x.date === ds && x.type === 'flight' && x.flight === `BR${numPart}`);
+          if (!alreadyAdded) {
+            results.push({ date:ds, code:displayCode, type:'flight', flight:`BR${numPart}`, notes:isPNC?'PNC':'' });
+          }
+        }
+      }
+    }
+  });
+
+  if (results.length === 0) {
+    alert('No duties found.\n\nMake sure each line looks like:\n  3 212 PNC\n  13 164 163\n  14 LO\n  26 AL');
+    return;
+  }
+
+  ocrRows = results;
+  renderOcrTable(results);
+}
+
+function renderOcrTable(rows) {
+  document.getElementById('ocrTableBody').innerHTML = rows.map((r, i) => `
+    <tr>
+      <td><input type="date" value="${r.date}" onchange="ocrRows[${i}].date=this.value"></td>
+      <td><input type="text"  value="${r.code}" onchange="ocrRows[${i}].code=this.value" style="width:90px"></td>
+      <td><select onchange="ocrRows[${i}].type=this.value">
+        ${['flight','leave','sick','layover','medical','off'].map(t=>`<option value="${t}"${r.type===t?' selected':''}>${t}</option>`).join('')}
+      </select></td>
+      <td><button class="ocr-row-del" onclick="ocrRows.splice(${i},1);renderOcrTable(ocrRows)">✕</button></td>
+    </tr>`).join('');
+  document.getElementById('ocrResultArea').style.display = 'block';
+  document.getElementById('ocrSaveBtn').style.display    = 'inline-block';
+}
+
+function addOcrRow() {
+  const y = document.getElementById('ocrYear').value, m = document.getElementById('ocrMonth').value;
+  ocrRows.push({ date:`${y}-${String(m).padStart(2,'0')}-01`, code:'', type:'flight', flight:'', notes:'' });
+  renderOcrTable(ocrRows);
+}
+
+function commitOcrImport() {
+  const existing = loadData();
+  const newEntries = ocrRows.map(r => {
+    const numPart = r.code.replace(/\s*PNC$/i,'').replace(/^BR/i,'').trim();
+    const flt = r.type === 'flight' ? `BR${numPart}` : '';
+    return {
+      id: 'ocr_' + Date.now() + '_' + Math.random().toString(36).slice(2),
+      date: r.date, type: r.type,
+      flight: flt,
+      from:'', to:'', std:'', sta:'', atd:'', ata:'', block:'', flyTime:'',
+      notes: r.code.toUpperCase().includes('PNC') ? 'PNC' : (DUTY_MAP[r.code.toUpperCase()] ? r.code.toUpperCase() : ''),
+      postSchedule: false,
+    };
+  });
+  // Deduplicate against existing data: skip any new entry that exactly matches
+  // an existing one on the same date with the same type and flight number.
+  const filtered = newEntries.filter(ne =>
+    !existing.some(e => e.date === ne.date && e.type === ne.type &&
+      (ne.type !== 'flight' || e.flight === ne.flight))
+  );
+  if (filtered.length < newEntries.length) {
+    const skipped = newEntries.length - filtered.length;
+    if (!confirm(`${skipped} duplicate entr${skipped===1?'y':'ies'} already exist and will be skipped. Import ${filtered.length} new entr${filtered.length===1?'y':'ies'}?`)) return;
+  }
+  saveData([...existing, ...filtered]);
+  const y = parseInt(document.getElementById('ocrYear').value);
+  const m = parseInt(document.getElementById('ocrMonth').value) - 1;
+  viewYear = y; viewMonth = m;
+  closeOcrModal(); render();
+  setTimeout(() => saveBackup(), 300);
+}
+
+// ── CSV ───────────────────────────────────────────────────────────────────────
+function exportCSV(){
+  const h=['date','type','flight','from','to','std','sta','atd','ata','block','flyTime','notes','postSchedule'];
+  const rows=loadData().map(e=>h.map(k=>`"${String(e[k]||'').replace(/"/g,'""')}"`).join(','));
+  const blob=new Blob([[h.join(','),...rows].join('\n')],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`roster_${viewYear}_${viewMonth+1}.csv`;a.click();
+}
+function importCSV(event){
+  const file=event.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const lines=e.target.result.trim().split('\n'),headers=lines[0].split(',');
+    const clean=v=>(v||'').replace(/^"|"$/g,'').replace(/""/g,'"');
+    const ne=lines.slice(1).map((line,i)=>{
+      const vals=line.match(/(".*?"|[^,]+|(?<=,)(?=,)|^(?=,)|(?<=,)$)/g)||[];
+      const obj={id:'import_'+Date.now()+'_'+i};
+      headers.forEach((h,j)=>obj[h.trim()]=clean(vals[j]));return obj;
+    });
+    saveData([...loadData(),...ne]);render();event.target.value='';
+  };
+  reader.readAsText(file);
+}
+
+// ── Close overlays on bg click ────────────────────────────────────────────────
+['overlay','summaryOverlay','ocrOverlay','ioOverlay'].forEach(id=>{
+  document.getElementById(id).addEventListener('click',e=>{if(e.target.id===id)document.getElementById(id).classList.remove('active');});
+});
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+seedData();
+render();
+</script>
+</body>
+</html>
